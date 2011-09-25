@@ -1,5 +1,6 @@
 // Copyright 2011 <François Saint-Jacques>
 
+#include <thread>
 #include <vector>
 
 #include "disruptor/interface.h"
@@ -42,8 +43,7 @@ class SingleThreadedStrategy :  public ClaimStrategyInterface {
         if (wrap_point > min_processor_sequence_) {
             int64_t min_sequence = GetMinimumSequence(dependent_sequences);
             while (wrap_point > min_sequence) {
-                // TODO(fsaintjacques): port this to boost::thread
-                // Thread.yield();
+                std::this_thread::sleep_for(std::chrono::microseconds(100));
                 min_sequence = GetMinimumSequence(dependent_sequences);
             }
             min_processor_sequence_ = min_sequence;
@@ -91,8 +91,7 @@ class MultiThreadedStrategy :  public ClaimStrategyInterface {
         if (wrap_point > min_processor_sequence_.sequence()) {
             int64_t min_sequence = GetMinimumSequence(dependent_sequences);
             while (wrap_point > min_sequence) {
-                // TODO(fsaintjacques): port this to boost::thread
-                // Thread.yield();
+                std::this_thread::sleep_for(std::chrono::microseconds(100));
                 min_sequence = GetMinimumSequence(dependent_sequences);
             }
             min_processor_sequence_.set_sequence(min_sequence);
@@ -108,7 +107,7 @@ class MultiThreadedStrategy :  public ClaimStrategyInterface {
         while (expected_sequence != cursor.sequence()) {
             if (0 == --counter) {
                 counter = 1000;
-                // thread.yeild()
+                std::this_thread::sleep_for(std::chrono::microseconds(100));
             }
         }
     }
