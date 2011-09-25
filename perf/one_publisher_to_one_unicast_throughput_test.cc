@@ -1,22 +1,32 @@
-#include <iostream>
+#include <sys/time.h>
 
-#include <boost/ref.hpp>
-#include <boost/thread.hpp>
+#include <exception>
+#include <functional>
+#include <iostream>
+#include <thread>
 
 #include <disruptor/ring_buffer.h>
 #include <disruptor/event_processor.h>
 
-struct Toutoune {
+struct DummyEvent {
+    DummyEvent() : count(0) {};
     int count;
 };
 
 using namespace disruptor;
 
-class DummyBatchHandler : public EventHandlerInterface<Toutoune> {
+class DummyBatchHandler : public EventHandlerInterface<DummyEvent> {
  public:
-    virtual void OnEvent(Toutoune* event, bool end_of_batch) {
+    virtual void OnEvent(DummyEvent* event, bool end_of_batch) {
         if (event)
-            std::cerr << "processing: " << event->count << std::endl;
+            event->count += 1;
+    };
+};
+
+class DummyEventFactory : public EventFactoryInterface<DummyEvent> {
+ public:
+    virtual DummyEvent* Create() const {
+        return new DummyEvent();
     };
 };
 
@@ -24,43 +34,49 @@ class DummyBatchHandler : public EventHandlerInterface<Toutoune> {
 
 int main(int arc, char** argv) {
     int buffer_size = 1024 * 8;
-    long iterations = 1000L * 1000L * 300L;
+    long iterations = 1000L * 1000L * 100L;
 
-    RingBuffer<Toutoune> ring_buffer(kSingleThreadedStrategy,
+    DummyEventFactory dummy_factory;
+    RingBuffer<DummyEvent> ring_buffer(kSingleThreadedStrategy,
                                      kYieldingStrategy,
-                                     buffer_size);
+                                     buffer_size,
+                                     dummy_factory);
 
-    std::vector<EventProcessorInterface<Toutoune>*> processor_list(0);
+    std::vector<EventProcessorInterface<DummyEvent>*> processor_list(0);
     ProcessingSequenceBarrier* barrier = \
         ring_buffer.SetTrackedProcessor(processor_list);
 
     DummyBatchHandler dummy_handler;
-    BatchEventProcessor<Toutoune>* processor = \
-        new BatchEventProcessor<Toutoune>(&ring_buffer,
-                                          (SequenceBarrierInterface*) barrier,
-                                          &dummy_handler);
+    BatchEventProcessor<DummyEvent> processor(&ring_buffer,
+                                            (SequenceBarrierInterface*) barrier,
+                                            &dummy_handler);
 
-    boost::thread consumer(boost::ref< BatchEventProcessor<Toutoune> >(*processor));
+    std::thread consumer(std::ref<BatchEventProcessor<DummyEvent>>(processor));
 
     struct timeval start_time, end_time;
 
-    gettimeofday(&end_time, NULL);
+    gettimeofday(&start_time, NULL);
 
     for (long i=0; i<iterations; i++) {
-        Event<Toutoune>* event = ring_buffer.NextEvent();
-        Toutoune* toutoune = new Toutoune();
+        Event<DummyEvent>* event = ring_buffer.NextEvent();
+        DummyEvent* toutoune = event->data();
         toutoune->count = i;
         event->set_data(toutoune);
         ring_buffer.Publish(event->sequence());
     }
 
     long expected_sequence = ring_buffer.GetCursor();
-    while (processor->GetSequence()->sequence() < expected_sequence) {}
+    while (processor.GetSequence()->sequence() < expected_sequence) {}
 
     gettimeofday(&end_time, NULL);
 
     std::cout << (iterations * 1.0) / (end_time.tv_sec - start_time.tv_sec)
               << " operations / seconds" << std::endl;
+
+    barrier->Alert();
+    consumer.join();
+
+    delete barrier;
 
     return 0;
 }
