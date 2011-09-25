@@ -1,8 +1,7 @@
 // Copyright 2011 <François Saint-Jacques>
 
+#include <memory>
 #include <vector>
-
-#include <boost/scoped_ptr.hpp> // NOLINT
 
 #include "disruptor/interface.h"
 
@@ -23,14 +22,14 @@ class ProcessingSequenceBarrier : SequenceBarrierInterface {
     }
 
     virtual int64_t WaitFor(const int64_t& sequence) {
-        wait_strategy_->WaitFor(dependent_sequences_, *cursor_, *this,
-                                sequence);
+        return wait_strategy_->WaitFor(dependent_sequences_, *cursor_, *this,
+                                       sequence);
     }
 
     virtual int64_t WaitFor(const int64_t& sequence,
                             const int64_t& timeout_micros) {
-        wait_strategy_->WaitFor(dependent_sequences_, *cursor_, *this,
-                                sequence, timeout_micros);
+        return wait_strategy_->WaitFor(dependent_sequences_, *cursor_, *this,
+                                       sequence, timeout_micros);
     }
 
     virtual int64_t GetCursor() const {
@@ -53,7 +52,7 @@ class ProcessingSequenceBarrier : SequenceBarrierInterface {
     WaitStrategyInterface* wait_strategy_;
     Sequence* cursor_;
     std::vector<Sequence*> dependent_sequences_;
-    boost::atomic<bool> alerted_;
+    std::atomic<bool> alerted_;
 };
 
 };  // namespace disruptor

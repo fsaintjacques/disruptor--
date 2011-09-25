@@ -1,13 +1,10 @@
-/ Copyright 2011 <François Saint-Jacques>
+// Copyright 2011 <François Saint-Jacques>
 
+#include <sys/time.h>
+
+#include <chrono>
+#include <thread>
 #include <vector>
-
-#include <boost/function.hpp>  // NOLINT
-#include <boost/thread/recursive_mutex.hpp> // NOLINT
-#include <boost/thread/condition_variable.hpp> // NOLINT
-#include <boost/type_traits.hpp> // NOLINT
-#include <boost/timer.hpp> // NOLINT
-#include <boost/static_assert.hpp> // NOLINT
 
 #include "disruptor/exceptions.h"
 #include "disruptor/interface.h"
@@ -40,12 +37,12 @@ enum WaitStrategyOption {
 class BlockingStrategy :  public WaitStrategyInterface {
  public:
     virtual int64_t WaitFor(const std::vector<Sequence*>& dependents,
-                          const Sequence& cursor,
-                          const SequenceBarrierInterface& barrier,
-                          const int64_t& sequence) {
+                            const Sequence& cursor,
+                            const SequenceBarrierInterface& barrier,
+                            const int64_t& sequence) {
         int64_t available_sequence = 0;
         if ((available_sequence = cursor.sequence()) < sequence) {
-            boost::unique_lock<boost::recursive_mutex> ulock(mutex_);
+            std::unique_lock<std::recursive_mutex> ulock(mutex_);
             while ((available_sequence = cursor.sequence()) < sequence) {
                 if (barrier.IsAlerted())
                     throw AlertException();
@@ -65,24 +62,24 @@ class BlockingStrategy :  public WaitStrategyInterface {
     }
 
     virtual int64_t WaitFor(const std::vector<Sequence*>& dependents,
-                         const Sequence& cursor,
-                         const SequenceBarrierInterface& barrier,
-                         const int64_t& sequence,
-                         const int64_t& timeout_micros) {
+                            const Sequence& cursor,
+                            const SequenceBarrierInterface& barrier,
+                            const int64_t& sequence,
+                            const int64_t& timeout_micros) {
         int64_t available_sequence = 0;
         if ((available_sequence = cursor.sequence()) < sequence) {
-            boost::unique_lock<boost::recursive_mutex> ulock(mutex_);
+            std::unique_lock<std::recursive_mutex> ulock(mutex_);
             ulock.lock();
             while ((available_sequence = cursor.sequence()) < sequence) {
                 if (barrier.IsAlerted())
                     throw AlertException();
 
-                if (!consumer_notify_condition_.timed_wait(ulock,
-                    boost::posix_time::microseconds(timeout_micros)))
+                if (std::cv_status::timeout == consumer_notify_condition_.wait_for(ulock,
+                    std::chrono::microseconds(timeout_micros)))
                     break;
 
             }
-            ulock.unlock();
+            // ulock.unlock();
         }
 
         if (0 != dependents.size()) {
@@ -101,8 +98,8 @@ class BlockingStrategy :  public WaitStrategyInterface {
     }
 
  private:
-    boost::recursive_mutex mutex_;
-    boost::condition_variable_any consumer_notify_condition_;
+    std::recursive_mutex mutex_;
+    std::condition_variable_any consumer_notify_condition_;
 };
 
 // Yielding strategy that uses a sleep(0) for {@link EventProcessor}s waiting
@@ -111,22 +108,22 @@ class BlockingStrategy :  public WaitStrategyInterface {
 class YieldingStrategy :  public WaitStrategyInterface {
  public:
     virtual int64_t WaitFor(const std::vector<Sequence*>& dependents,
-                         const Sequence& cursor,
-                         const SequenceBarrierInterface& barrier,
-                         const int64_t& sequence) {
+                            const Sequence& cursor,
+                            const SequenceBarrierInterface& barrier,
+                            const int64_t& sequence) {
         int64_t available_sequence = 0;
         if (0 == dependents.size()) {
             while ((available_sequence = cursor.sequence()) < sequence) {
                 if (barrier.IsAlerted())
                     throw AlertException();
-                boost::this_thread::yield();
+                std::this_thread::yield();
             }
         } else {
             while ((available_sequence = GetMinimumSequence(dependents)) < \
                     sequence) {
                 if (barrier.IsAlerted())
                     throw AlertException();
-                boost::this_thread::yield();
+                std::this_thread::yield();
             }
         }
 
@@ -134,19 +131,22 @@ class YieldingStrategy :  public WaitStrategyInterface {
     }
 
     virtual int64_t WaitFor(const std::vector<Sequence*>& dependents,
-                         const Sequence& cursor,
-                         const SequenceBarrierInterface& barrier,
-                         const int64_t& sequence,
-                         const int64_t & timeout_micros) {
-        boost::timer timer;
+                            const Sequence& cursor,
+                            const SequenceBarrierInterface& barrier,
+                            const int64_t& sequence,
+                            const int64_t & timeout_micros) {
+        struct timeval start_time, end_time;
+        gettimeofday(&start_time, NULL);
+        int64_t start_micro = start_time.tv_sec*1000000 + start_time.tv_usec;
         int64_t available_sequence = 0;
-
         if (0 == dependents.size()) {
             while ((available_sequence = cursor.sequence()) < sequence) {
                 if (barrier.IsAlerted())
                     throw AlertException();
-                boost::this_thread::yield();
-                if (timeout_micros < (timer.elapsed() * 1000000))
+                std::this_thread::yield();
+                gettimeofday(&end_time, NULL);
+                int64_t end_micro = end_time.tv_sec*1000000 + end_time.tv_usec;
+                if (timeout_micros < (end_micro - start_micro))
                     break;
             }
         } else {
@@ -154,8 +154,10 @@ class YieldingStrategy :  public WaitStrategyInterface {
                     sequence) {
                 if (barrier.IsAlerted())
                     throw AlertException();
-                boost::this_thread::yield();
-                if (timeout_micros < (timer.elapsed() * 1000000))
+                std::this_thread::yield();
+                gettimeofday(&end_time, NULL);
+                int64_t end_micro = end_time.tv_sec*1000000 + end_time.tv_usec;
+                if (timeout_micros < (end_micro - start_micro))
                     break;
             }
         }
@@ -196,18 +198,22 @@ class BusySpinStrategy :  public WaitStrategyInterface {
     }
 
     virtual int64_t WaitFor(const std::vector<Sequence*>& dependents,
-                         const Sequence& cursor,
-                         const SequenceBarrierInterface& barrier,
-                         const int64_t& sequence,
-                         const int64_t& timeout_micros) {
-        boost::timer timer;
+                            const Sequence& cursor,
+                            const SequenceBarrierInterface& barrier,
+                            const int64_t& sequence,
+                            const int64_t& timeout_micros) {
+        struct timeval start_time, end_time;
+        gettimeofday(&start_time, NULL);
+        int64_t start_micro = start_time.tv_sec*1000000 + start_time.tv_usec;
         int64_t available_sequence = 0;
 
         if (0 == dependents.size()) {
             while ((available_sequence = cursor.sequence()) < sequence) {
                 if (barrier.IsAlerted())
                     throw AlertException();
-                if (timeout_micros < (timer.elapsed() * 1000000))
+                gettimeofday(&end_time, NULL);
+                int64_t end_micro = end_time.tv_sec*1000000 + end_time.tv_usec;
+                if (timeout_micros < (end_micro - start_micro))
                     break;
             }
         } else {
@@ -215,7 +221,9 @@ class BusySpinStrategy :  public WaitStrategyInterface {
                     sequence) {
                 if (barrier.IsAlerted())
                     throw AlertException();
-                if (timeout_micros < (timer.elapsed() * 1000000))
+                gettimeofday(&end_time, NULL);
+                int64_t end_micro = end_time.tv_sec*1000000 + end_time.tv_usec;
+                if (timeout_micros < (end_micro - start_micro))
                     break;
             }
         }

@@ -3,8 +3,6 @@
 #include <climits>
 #include <vector>
 
-#include <boost/function.hpp> // NOLINT
-
 #include "disruptor/sequence.h"
 #include "disruptor/sequence_batch.h"
 #include "disruptor/event.h"
@@ -101,6 +99,12 @@ virtual void OnEvent(T* event, bool end_of_batch) = 0;
 };
 
 template<typename T>
+class EventFactoryInterface {
+ public:
+     virtual T* Create() const = 0;
+};
+
+template<typename T>
 class EventProcessorInterface {
  public:
      // Get a reference to the {@link Sequence} being used by this
@@ -164,9 +168,9 @@ class WaitStrategyInterface {
     //  @throws AlertException if the status of the Disruptor has changed.
     //  @throws InterruptedException if the thread is interrupted.
     virtual int64_t WaitFor(const std::vector<Sequence*>& dependents,
-                         const Sequence& cursor,
-                         const SequenceBarrierInterface& barrier,
-                         const int64_t& sequence) = 0;
+                            const Sequence& cursor,
+                            const SequenceBarrierInterface& barrier,
+                            const int64_t& sequence) = 0;
 
     //  Wait for the given sequence to be available for consumption in a
     //  {@link RingBuffer} with a timeout specified.
@@ -183,10 +187,10 @@ class WaitStrategyInterface {
     //  @throws AlertException if the status of the Disruptor has changed.
     //  @throws InterruptedException if the thread is interrupted.
     virtual int64_t WaitFor(const std::vector<Sequence*>& dependents,
-                         const Sequence& cursor,
-                         const SequenceBarrierInterface& barrier,
-                         const int64_t & sequence,
-                         const int64_t & timeout_micros) = 0;
+                            const Sequence& cursor,
+                            const SequenceBarrierInterface& barrier,
+                            const int64_t & sequence,
+                            const int64_t & timeout_micros) = 0;
 
     // Signal those waiting that the {@link RingBuffer} cursor has advanced.
     virtual void SignalAll() = 0;
@@ -197,8 +201,8 @@ int64_t GetMinimumSequence(
         const std::vector<EventProcessorInterface<T>*>& event_processors) {
         int64_t minimum = LONG_MAX;
 
-        for (int i = 0; i < event_processors.size(); i++) {
-            int64_t sequence = event_processors[i]->GetSequence()->sequence();
+        for (EventProcessorInterface<T>* event_processor: event_processors) {
+            int64_t sequence = event_processor->GetSequence()->sequence();
             minimum = minimum < sequence ? minimum : sequence;
         }
 
@@ -209,8 +213,8 @@ int64_t GetMinimumSequence(
         const std::vector<Sequence*>& sequences) {
         int64_t minimum = LONG_MAX;
 
-        for (int i = 0; i < sequences.size(); i++) {
-            int64_t sequence = sequences[i]->sequence();
+        for (Sequence* sequence_: sequences) {
+            int64_t sequence = sequence_->sequence();
             minimum = minimum < sequence ? minimum : sequence;
         }
 

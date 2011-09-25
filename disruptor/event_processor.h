@@ -39,7 +39,7 @@ class BatchEventProcessor : public EventProcessorInterface<T> {
 
                 while (next_sequence <= avalaible_sequence) {
                     event = ring_buffer_->GetEvent(next_sequence);
-                    event_handler_->OnEvent(event->mutable_data(),
+                    event_handler_->OnEvent(event->data(),
                             next_sequence == avalaible_sequence);
                     next_sequence++;
                 }
@@ -60,12 +60,12 @@ class BatchEventProcessor : public EventProcessorInterface<T> {
     void operator()() { Run(); }
 
  private:
-    boost::atomic<bool> running_;
+    std::atomic<bool> running_;
     Sequence sequence_;
 
     RingBuffer<T>* ring_buffer_;
     SequenceBarrierInterface* sequence_barrier_;
-    boost::scoped_ptr< EventHandlerInterface<T> > event_handler_;
+    EventHandlerInterface<T>* event_handler_;
 };
 
 

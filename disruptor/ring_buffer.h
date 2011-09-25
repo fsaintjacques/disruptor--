@@ -10,8 +10,6 @@
 #ifndef DISRUPTOR_RING_BUFFER_H_ // NOLINT
 #define DISRUPTOR_RING_BUFFER_H_ // NOLINT
 
-// #define buffer_size_ 256
-
 namespace disruptor {
 
 template<typename T>
@@ -19,25 +17,30 @@ class RingBuffer :  public PublisherPortInterface<T> {
  public:
     RingBuffer(ClaimStrategyOption claim_strategy_option,
                WaitStrategyOption wait_strategy_option,
-               int buffer_size) :
-        buffer_size_(buffer_size),
-        mask_(buffer_size_ - 1),
-        events_(new Event<T>[buffer_size_]),
-        claim_strategy_(CreateClaimStrategy(claim_strategy_option,
-                                            buffer_size_)),
-        wait_strategy_(CreateWaitStrategy(wait_strategy_option)) {}
+               int buffer_size,
+               const EventFactoryInterface<T>& event_factory) :
+            buffer_size_(buffer_size),
+            mask_(buffer_size_ - 1),
+            events_(new Event<T>[buffer_size_]),
+            claim_strategy_(CreateClaimStrategy(claim_strategy_option,
+                                                buffer_size_)),
+            wait_strategy_(CreateWaitStrategy(wait_strategy_option)) {
+        Fill(event_factory);
+        }
 
     ~RingBuffer() {
         delete events_;
+        delete claim_strategy_;
+        delete wait_strategy_;
     }
 
     ProcessingSequenceBarrier* SetTrackedProcessor(
             const std::vector<EventProcessorInterface<T>*>& event_processors) {
         std::vector<Sequence*> dependent_sequences;
-        for (int i = 0; i < event_processors.size(); i++)
-            dependent_sequences.push_back(event_processors[i]->GetSequence());
+        for (EventProcessorInterface<T>* processor: event_processors)
+            dependent_sequences.push_back(processor->GetSequence());
 
-        return new ProcessingSequenceBarrier(wait_strategy_.get(), &cursor_,
+        return new ProcessingSequenceBarrier(wait_strategy_, &cursor_,
                                              dependent_sequences);
     }
 
@@ -45,7 +48,7 @@ class RingBuffer :  public PublisherPortInterface<T> {
     int GetCapacity() { return buffer_size_; }
 
     virtual Event<T>* GetEvent(const int64_t& sequence) {
-        return &events_[sequence % mask_];
+        return &events_[sequence & mask_];
     }
 
     virtual int64_t GetCursor() { return cursor_.sequence(); }
@@ -55,7 +58,7 @@ class RingBuffer :  public PublisherPortInterface<T> {
         claim_strategy_->EnsureProcessorsAreInRange(sequence,
                 processor_sequences_to_track_);
 
-        Event<T>& event = events_[sequence % mask_];
+        Event<T>& event = events_[sequence & mask_];
         event.set_sequence(sequence);
 
         return &event;
@@ -94,6 +97,12 @@ class RingBuffer :  public PublisherPortInterface<T> {
         wait_strategy_->SignalAll();
     }
 
+    void Fill(const EventFactoryInterface<T>& event_factory) {
+        for (int i = 0 ; i < buffer_size_; i++) {
+            events_[i].set_data(event_factory.Create());
+        }
+    }
+
     // Members
     Sequence cursor_;
     int buffer_size_;
@@ -101,8 +110,8 @@ class RingBuffer :  public PublisherPortInterface<T> {
     Event<T>* events_;
     std::vector<Sequence*> processor_sequences_to_track_;
 
-    const boost::scoped_ptr<ClaimStrategyInterface> claim_strategy_;
-    const boost::scoped_ptr<WaitStrategyInterface> wait_strategy_;
+    ClaimStrategyInterface* claim_strategy_;
+    WaitStrategyInterface* wait_strategy_;
 };
 
 };  // namespace disruptor

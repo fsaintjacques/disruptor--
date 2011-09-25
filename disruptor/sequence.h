@@ -1,6 +1,6 @@
 // Copyright 2011 <François Saint-Jacques>
 
-#include <boost/atomic.hpp> // NOLINT
+#include <atomic>
 
 #include "disruptor/utils.h"
 
@@ -8,7 +8,7 @@
 #define CACHE_LINE_SIZE_IN_BYTES 64 // NOLINT
 #endif // NOLINT
 #define SEQUENCE_PADDING_LENGTH \
-    (CACHE_LINE_SIZE_IN_BYTES - sizeof(boost::atomic<int64_t>))/8
+    (CACHE_LINE_SIZE_IN_BYTES - sizeof(std::atomic<int64_t>))/8
 
 #ifndef DISRUPTOR_SEQUENCE_H_ // NOLINT
 #define DISRUPTOR_SEQUENCE_H_ // NOLINT
@@ -32,7 +32,7 @@ class Sequence {
 
  private:
     // members
-    boost::atomic<int64_t> value_;
+    std::atomic<int64_t> value_;
 
     // padding
     int64_t padding_[SEQUENCE_PADDING_LENGTH];
