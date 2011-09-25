@@ -70,7 +70,12 @@ int main(int arc, char** argv) {
 
     gettimeofday(&end_time, NULL);
 
-    std::cout << (iterations * 1.0) / (end_time.tv_sec - start_time.tv_sec)
+    double start, end;
+    start = start_time.tv_sec + ((double) start_time.tv_usec / 1000000);
+    end = end_time.tv_sec + ((double) end_time.tv_usec / 1000000);
+
+    std::cout.precision(15);
+    std::cout << (iterations * 1.0) / (end - start)
               << " operations / seconds" << std::endl;
 
     barrier->Alert();
