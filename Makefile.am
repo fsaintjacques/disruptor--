@@ -1,0 +1,18 @@
+AUTOMAKE_OPTIONS = subdir-objects
+ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
+
+
+disruptordir = $(includedir)/disruptor
+disruptor_HEADERS = disruptor/claim_strategy.h \
+				    disruptor/event.h \
+				    disruptor/event_processor.h \
+				    disruptor/exceptions.h \
+				    disruptor/interface.h \
+				    disruptor/ring_buffer.h \
+				    disruptor/sequence.h \
+				    disruptor/sequence_barrier.h \
+				    disruptor/sequence_batch.h \
+				    disruptor/utils.h \
+				    disruptor/wait_strategy.h
+
+SUBDIRS = perf
