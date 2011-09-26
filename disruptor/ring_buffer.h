@@ -29,6 +29,11 @@ class RingBuffer :  public PublisherPortInterface<T> {
         }
 
     ~RingBuffer() {
+		// cleanup internal structure
+		for (int i = 0; i < buffer_size_; i++) {
+			delete events_[i].data();
+		}
+
         delete events_;
         delete claim_strategy_;
         delete wait_strategy_;
