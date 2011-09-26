@@ -3,6 +3,7 @@
 #include <exception>
 #include <functional>
 #include <iostream>
+#include <memory>
 #include <thread>
 
 #include <disruptor/ring_buffer.h>
@@ -38,18 +39,18 @@ int main(int arc, char** argv) {
 
     DummyEventFactory dummy_factory;
     RingBuffer<DummyEvent> ring_buffer(kSingleThreadedStrategy,
-                                     kYieldingStrategy,
-                                     buffer_size,
-                                     dummy_factory);
+                                       kYieldingStrategy,
+                                       buffer_size,
+                                       dummy_factory);
 
     std::vector<EventProcessorInterface<DummyEvent>*> processor_list(0);
-    ProcessingSequenceBarrier* barrier = \
-        ring_buffer.SetTrackedProcessor(processor_list);
+    std::unique_ptr<ProcessingSequenceBarrier> barrier(
+        ring_buffer.SetTrackedProcessor(processor_list));
 
     DummyBatchHandler dummy_handler;
     BatchEventProcessor<DummyEvent> processor(&ring_buffer,
-                                            (SequenceBarrierInterface*) barrier,
-                                            &dummy_handler);
+                                              (SequenceBarrierInterface*) barrier.get(),
+                                              &dummy_handler);
 
     std::thread consumer(std::ref<BatchEventProcessor<DummyEvent>>(processor));
 
@@ -75,14 +76,13 @@ int main(int arc, char** argv) {
     end = end_time.tv_sec + ((double) end_time.tv_usec / 1000000);
 
     std::cout.precision(15);
+    std::cout << "1P-1EP performance: ";
     std::cout << (iterations * 1.0) / (end - start)
-              << " operations / seconds" << std::endl;
+              << " ops/secs" << std::endl;
 
     barrier->Alert();
     consumer.join();
 
-    delete barrier;
-
-    return 0;
+    return EXIT_SUCCESS;
 }
 
