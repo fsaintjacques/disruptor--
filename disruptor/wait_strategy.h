@@ -134,7 +134,7 @@ class YieldingStrategy :  public WaitStrategyInterface {
                             const Sequence& cursor,
                             const SequenceBarrierInterface& barrier,
                             const int64_t& sequence,
-                            const int64_t & timeout_micros) {
+                            const int64_t& timeout_micros) {
         struct timeval start_time, end_time;
         gettimeofday(&start_time, NULL);
         int64_t start_micro = start_time.tv_sec*1000000 + start_time.tv_usec;
