@@ -22,12 +22,12 @@ class BatchEventProcessor : public EventProcessorInterface<T> {
     virtual Sequence* GetSequence() { return &sequence_; }
 
     virtual void Halt() {
-        running_.store(false);
+        running_.store(false, std::memory_order::memory_order_release);
         sequence_barrier_->Alert();
     }
 
     virtual void Run() {
-        running_.store(true);
+        running_.store(true, std::memory_order::memory_order_release);
 
         Event<T>* event = NULL;
         int64_t next_sequence = sequence_.sequence() + 1L;
@@ -46,7 +46,7 @@ class BatchEventProcessor : public EventProcessorInterface<T> {
 
                 sequence_.set_sequence(event->sequence());
             } catch(const AlertException& e) {
-                if (running_.load())
+                if (running_.load(std::memory_order::memory_order_acquire))
                     break;
             } catch(const std::exception& e) {
                 //TODO(fsaintjacques): exception_handler_->handle(e, event);

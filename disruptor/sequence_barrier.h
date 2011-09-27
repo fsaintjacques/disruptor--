@@ -37,15 +37,15 @@ class ProcessingSequenceBarrier : SequenceBarrierInterface {
     }
 
     virtual bool IsAlerted() const {
-        return alerted_.load();
+        return alerted_.load(std::memory_order::memory_order_acquire);
     }
 
     virtual void Alert() {
-        alerted_.store(true);
+        alerted_.store(true, std::memory_order::memory_order_release);
     }
 
     virtual void ClearAlert() {
-        alerted_.store(false);
+        alerted_.store(false, std::memory_order::memory_order_release);
     }
 
  private:

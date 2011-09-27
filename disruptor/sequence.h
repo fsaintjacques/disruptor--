@@ -22,9 +22,9 @@ class Sequence {
     Sequence(int64_t initial_value = kInitialCursorValue) :
             value_(initial_value) {}
 
-    int64_t sequence() const { return value_; }
+    int64_t sequence() const { return value_.load(std::memory_order::memory_order_acquire); }
 
-    void set_sequence(int64_t value) { value_.store(value); }
+    void set_sequence(int64_t value) { value_.store(value, std::memory_order::memory_order_release); }
 
     int64_t IncrementAndGet(const int64_t& increment) {
         return value_.fetch_add(increment) + increment;
