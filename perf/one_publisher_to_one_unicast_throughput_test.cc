@@ -35,7 +35,7 @@ class DummyEventFactory : public EventFactoryInterface<DummyEvent> {
 
 int main(int arc, char** argv) {
     int buffer_size = 1024 * 8;
-    long iterations = 1000L * 1000L * 100L;
+    long iterations = 1000L * 1000L * 300L;
 
     DummyEventFactory dummy_factory;
     RingBuffer<DummyEvent> ring_buffer(kSingleThreadedStrategy,
