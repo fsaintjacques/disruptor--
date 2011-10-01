@@ -1,7 +1,7 @@
 // Copyright 2011 <François Saint-Jacques>
+#include <exception>
 
 #include "disruptor/ring_buffer.h"
-
 #ifndef DISRUPTOR_EVENT_PROCESSOR_H_ // NOLINT
 #define DISRUPTOR_EVENT_PROCESSOR_H_ // NOLINT
 
@@ -27,7 +27,12 @@ class BatchEventProcessor : public EventProcessorInterface<T> {
     }
 
     virtual void Run() {
-        running_.store(true, std::memory_order::memory_order_release);
+        if (running_.load())
+            throw std::runtime_error("Thread is already running");
+
+        running_.store(true);
+        sequence_barrier_->ClearAlert();
+        event_handler_->OnStart();
 
         T* event = NULL;
         int64_t next_sequence = sequence_.sequence() + 1L;
@@ -46,7 +51,7 @@ class BatchEventProcessor : public EventProcessorInterface<T> {
 
                 sequence_.set_sequence(next_sequence - 1L);
             } catch(const AlertException& e) {
-                if (running_.load(std::memory_order::memory_order_acquire))
+                if (running_.load())
                     break;
             } catch(const std::exception& e) {
                 //TODO(fsaintjacques): exception_handler_->handle(e, event);
@@ -54,6 +59,8 @@ class BatchEventProcessor : public EventProcessorInterface<T> {
                 next_sequence++;
             }
         }
+
+        running_.store(false);
     }
 
     void operator()() { Run(); }

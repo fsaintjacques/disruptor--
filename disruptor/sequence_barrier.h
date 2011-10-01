@@ -48,6 +48,11 @@ class ProcessingSequenceBarrier : SequenceBarrierInterface {
         alerted_.store(false, std::memory_order::memory_order_release);
     }
 
+    virtual void CheckAlert() const {
+        if (IsAlerted())
+            throw AlertException();
+    }
+
  private:
     WaitStrategyInterface* wait_strategy_;
     Sequence* cursor_;

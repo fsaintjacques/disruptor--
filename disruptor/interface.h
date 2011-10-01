@@ -5,7 +5,6 @@
 
 #include "disruptor/sequence.h"
 #include "disruptor/batch_descriptor.h"
-#include "disruptor/event.h"
 
 #ifndef DISRUPTOR_INTERFACE_H_ // NOLINT
 #define DISRUPTOR_INTERFACE_H_ // NOLINT
@@ -69,6 +68,9 @@ class SequenceBarrierInterface {
 
     // Clear the current alert status.
     virtual void ClearAlert() = 0;
+
+    // Check if barrier is alerted, if so throws an AlertException
+    virtual void CheckAlert() const = 0;
 };
 
 template<typename T>
@@ -88,6 +90,12 @@ class EventHandlerInterface {
     // @throws Exception if the EventHandler would like the exception handled
     // further up the chain.
     virtual void OnEvent(T* event, const int64_t& sequence, bool end_of_batch) = 0;
+
+    // Called once on thread start before processing the first event.
+    virtual void OnStart() = 0;
+
+    // Called once on thread stop just before shutdown.
+    virtual void OnShutdown() = 0;
 };
 
 template<typename T>

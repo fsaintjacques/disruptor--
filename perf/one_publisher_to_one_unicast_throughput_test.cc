@@ -23,6 +23,9 @@ class DummyBatchHandler : public EventHandlerInterface<DummyEvent> {
         if (event)
             event->count += 1;
     };
+
+    virtual void OnStart() {}
+    virtual void OnShutdown() {}
 };
 
 class DummyEventFactory : public EventFactoryInterface<DummyEvent> {
@@ -38,17 +41,18 @@ class DummyEventTranslator : public EventTranslatorInterface<DummyEvent> {
         event->count=sequence;
         return event;
     };
+
 };
 
 int main(int arc, char** argv) {
     int buffer_size = 1024 * 8;
-    long iterations = 1000L * 1000L * 300L;
+    long iterations = 1000L * 1000L * 300;
 
     DummyEventFactory dummy_factory;
     RingBuffer<DummyEvent> ring_buffer(&dummy_factory,
                                        buffer_size,
                                        kSingleThreadedStrategy,
-                                       kYieldingStrategy);
+                                       kBusySpinStrategy);
 
     std::vector<Sequence*> sequence_to_track(0);
     std::unique_ptr<ProcessingSequenceBarrier> barrier(
