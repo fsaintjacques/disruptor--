@@ -20,6 +20,7 @@ AC_CXX_COMPILE_STDCXX_0X
 
 # Checks for libraries.
 AC_CHECK_LIB(stdc++, [main])
+AC_CHECK_LIB(rt, [main])
 
 # Checks for library functions.
 AC_CHECK_FUNCS([gettimeofday])
