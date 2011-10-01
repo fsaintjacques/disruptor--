@@ -39,8 +39,10 @@ class SingleThreadedStrategy :  public ClaimStrategyInterface {
         WaitForFreeSlotAt(next_sequence, dependent_sequences);
         return next_sequence;
     }
-    virtual void SetSequence(const int64_t& sequence) {
+    virtual void SetSequence(const int64_t& sequence,
+            const std::vector<Sequence*>& dependent_sequences) {
         sequence_.set_sequence(sequence);
+        WaitForFreeSlotAt(sequence, dependent_sequences);
     }
 
     virtual bool HasAvalaibleCapacity(
@@ -55,18 +57,18 @@ class SingleThreadedStrategy :  public ClaimStrategyInterface {
         return true;
     }
 
-    virtual void SerialisePublishing(const Sequence& cursor,
-                                     const int64_t& sequence,
+    virtual void SerialisePublishing(const int64_t& sequence,
+                                     const Sequence& cursor,
                                      const int64_t& batch_size) {}
 
  private:
     SingleThreadedStrategy();
 
-    void WaitForFreeSlotAt(const long& sequence, 
+    void WaitForFreeSlotAt(const int64_t& sequence, 
             const std::vector<Sequence*>& dependent_sequences) {
         int64_t wrap_point = sequence - buffer_size_;
         if (wrap_point > min_gating_sequence_.sequence()) {
-            long min_sequence;
+            int64_t min_sequence;
             while (wrap_point > (min_sequence = GetMinimumSequence(dependent_sequences))) {
                 std::this_thread::yield();
             }
@@ -82,6 +84,7 @@ class SingleThreadedStrategy :  public ClaimStrategyInterface {
 
 // Strategy to be used when there are multiple publisher threads claiming
 // {@link AbstractEvent}s.
+/*
 class MultiThreadedStrategy :  public ClaimStrategyInterface {
  public:
     MultiThreadedStrategy(const int& buffer_size) :
@@ -137,14 +140,15 @@ class MultiThreadedStrategy :  public ClaimStrategyInterface {
 
     DISALLOW_COPY_AND_ASSIGN(MultiThreadedStrategy);
 };
+*/
 
 ClaimStrategyInterface* CreateClaimStrategy(ClaimStrategyOption option,
                                             const int& buffer_size) {
     switch (option) {
         case kSingleThreadedStrategy:
             return new SingleThreadedStrategy(buffer_size);
-        case kMultiThreadedStrategy:
-            return new MultiThreadedStrategy(buffer_size);
+        // case kMultiThreadedStrategy:
+        //     return new MultiThreadedStrategy(buffer_size);
         default:
             return NULL;
     }

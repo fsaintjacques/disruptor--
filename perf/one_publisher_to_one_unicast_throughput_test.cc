@@ -7,6 +7,7 @@
 #include <thread>
 
 #include <disruptor/ring_buffer.h>
+#include <disruptor/event_publisher.h>
 #include <disruptor/event_processor.h>
 
 struct DummyEvent {
@@ -18,7 +19,7 @@ using namespace disruptor;
 
 class DummyBatchHandler : public EventHandlerInterface<DummyEvent> {
  public:
-    virtual void OnEvent(DummyEvent* event, bool end_of_batch) {
+    virtual void OnEvent(DummyEvent* event, const int64_t& sequence, bool end_of_batch) {
         if (event)
             event->count += 1;
     };
@@ -26,26 +27,32 @@ class DummyBatchHandler : public EventHandlerInterface<DummyEvent> {
 
 class DummyEventFactory : public EventFactoryInterface<DummyEvent> {
  public:
-    virtual DummyEvent* Create() const {
-        return new DummyEvent();
+    virtual DummyEvent NewInstance() const {
+        return DummyEvent();
     };
 };
 
-
+class DummyEventTranslator : public EventTranslatorInterface<DummyEvent> {
+ public:
+    virtual DummyEvent* TranslateTo(DummyEvent* event, const int64_t& sequence) {
+        event->count=sequence;
+        return event;
+    };
+};
 
 int main(int arc, char** argv) {
     int buffer_size = 1024 * 8;
     long iterations = 1000L * 1000L * 300L;
 
     DummyEventFactory dummy_factory;
-    RingBuffer<DummyEvent> ring_buffer(kSingleThreadedStrategy,
-                                       kYieldingStrategy,
+    RingBuffer<DummyEvent> ring_buffer(&dummy_factory,
                                        buffer_size,
-                                       dummy_factory);
+                                       kSingleThreadedStrategy,
+                                       kYieldingStrategy);
 
-    std::vector<EventProcessorInterface<DummyEvent>*> processor_list(0);
+    std::vector<Sequence*> sequence_to_track(0);
     std::unique_ptr<ProcessingSequenceBarrier> barrier(
-        ring_buffer.SetTrackedProcessor(processor_list));
+        ring_buffer.SetTrackedProcessor(sequence_to_track));
 
     DummyBatchHandler dummy_handler;
     BatchEventProcessor<DummyEvent> processor(&ring_buffer,
@@ -58,12 +65,10 @@ int main(int arc, char** argv) {
 
     gettimeofday(&start_time, NULL);
 
+    std::unique_ptr<DummyEventTranslator> translator(new DummyEventTranslator);
+    EventPublisher<DummyEvent> publisher(&ring_buffer);
     for (long i=0; i<iterations; i++) {
-        Event<DummyEvent>* event = ring_buffer.NextEvent();
-        DummyEvent* toutoune = event->data();
-        toutoune->count = i;
-        event->set_data(toutoune);
-        ring_buffer.Publish(event->sequence());
+        publisher.PublishEvent(translator.get());
     }
 
     long expected_sequence = ring_buffer.GetCursor();

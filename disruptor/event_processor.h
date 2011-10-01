@@ -29,7 +29,7 @@ class BatchEventProcessor : public EventProcessorInterface<T> {
     virtual void Run() {
         running_.store(true, std::memory_order::memory_order_release);
 
-        Event<T>* event = NULL;
+        T* event = NULL;
         int64_t next_sequence = sequence_.sequence() + 1L;
 
         while (true) {
@@ -38,21 +38,20 @@ class BatchEventProcessor : public EventProcessorInterface<T> {
                     sequence_barrier_->WaitFor(next_sequence);
 
                 while (next_sequence <= avalaible_sequence) {
-                    event = ring_buffer_->GetEvent(next_sequence);
-                    event_handler_->OnEvent(event->data(),
+                    event = ring_buffer_->Get(next_sequence);
+                    event_handler_->OnEvent(event, next_sequence,
                             next_sequence == avalaible_sequence);
                     next_sequence++;
                 }
 
-                sequence_.set_sequence(event->sequence());
+                sequence_.set_sequence(next_sequence - 1L);
             } catch(const AlertException& e) {
                 if (running_.load(std::memory_order::memory_order_acquire))
                     break;
             } catch(const std::exception& e) {
                 //TODO(fsaintjacques): exception_handler_->handle(e, event);
-                sequence_.set_sequence(event->sequence());
-                next_sequence = event->sequence() + 1L;
-
+                sequence_.set_sequence(next_sequence);
+                next_sequence++;
             }
         }
     }

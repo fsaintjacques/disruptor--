@@ -15,24 +15,18 @@ namespace disruptor {
 class ClaimStrategyInterface {
  public:
     virtual int64_t IncrementAndGet(
-            const std::vector<Sequence*> dependent_sequences) = 0;
+            const std::vector<Sequence*>& dependent_sequences) = 0;
     virtual int64_t IncrementAndGet(const int& delta,
-            const std::vector<Sequence*> dependent_sequences) = 0;
+            const std::vector<Sequence*>& dependent_sequences) = 0;
 
-    virtual int64_t IncrementAndGet(
-            const std::vector<Sequence*> dependent_sequences) = 0;
-    virtual int64_t IncrementAndGet(const int& delta,
-            const std::vector<Sequence*> dependent_sequences) = 0;
-    virtual int64_t IncrementAndGet(const int64_t& sequence,
-            const std::vector<Sequence*> dependent_sequences) = 0;
-
-    virtual void SetSequence(const int64_t& sequence) = 0;
+    virtual void SetSequence(const int64_t& sequence,
+            const std::vector<Sequence*>& dependent_sequences) = 0;
 
     virtual bool HasAvalaibleCapacity(
         const std::vector<Sequence*>& dependent_sequences) = 0;
 
-    virtual void SerialisePublishing(const long& cursor,
-                                     const int64_t& sequence,
+    virtual void SerialisePublishing(const int64_t& sequence,
+                                     const Sequence& cursor,
                                      const int64_t& batch_size) = 0;
 };
 
@@ -78,22 +72,28 @@ class SequenceBarrierInterface {
 };
 
 template<typename T>
-class EventHandlerInterface {
-public:
-// Called when a publisher has published an {@link AbstractEvent} to the
-// {@link RingBuffer}
-// @param event published to the {@link RingBuffer}
-// @param endOfBatch flag to indicate if this is the last event in a batch
-// from the {@link RingBuffer}
-// @throws Exception if the EventHandler would like the exception handled
-// further up the chain.
-virtual void OnEvent(T* event, bool end_of_batch) = 0;
+class EventFactoryInterface {
+ public:
+     virtual T NewInstance() const = 0;
 };
 
 template<typename T>
-class EventFactoryInterface {
+class EventHandlerInterface {
  public:
-     virtual T* Create() const = 0;
+    // Called when a publisher has published an event to the {@link RingBuffer}
+    // @param event published to the {@link RingBuffer}
+    // @param sequence of the event being processed
+    // @param end_of_batch flag to indicate if this is the last event in a batch
+    // from the {@link RingBuffer}
+    // @throws Exception if the EventHandler would like the exception handled
+    // further up the chain.
+    virtual void OnEvent(T* event, const int64_t& sequence, bool end_of_batch) = 0;
+};
+
+template<typename T>
+class EventTranslatorInterface {
+ public:
+     virtual T* TranslateTo(T* event, const int64_t& sequence) = 0;
 };
 
 template<typename T>
@@ -110,39 +110,6 @@ class EventProcessorInterface {
     // It will call {@link DependencyBarrier#alert()} to notify the thread to
     // check status.
     virtual void Halt() = 0;
-};
-
-template<typename T>
-class PublisherPortInterface {
- public:
-    // Get the {@link Event<T>} for a given sequence from the underlying
-    // {@link RingBuffer<T>}.
-    // @param sequence of the {@link Event<T>} to get.
-    // @return the {@link Event<T>} for the sequence.
-    virtual Event<T>* GetEvent(const int64_t& sequence) = 0;
-
-    // Delegate a call to the {@link RingBuffer#GetCursor()}
-    // @return value of the cursor for entries that have been published.
-    virtual int64_t GetCursor() = 0;
-
-    // Claim the next {@link Event<T>} in sequence for a publisher on the
-    // {@link RingBuffer<T>}
-    // @return the claimed {@link Event<T>}
-    virtual Event<T>* NextEvent() = 0;
-
-    // Claim the next batch of {@link AbstractEvent}s in sequence.
-    // @param sequenceBatch to be updated for the batch range.
-    // @return the updated sequenceBatch.
-    virtual BatchDescriptor* NextEvents(BatchDescriptor* batch_descriptor) = 0;
-
-    // Publish an event back to the {@link RingBuffer<T>} to make it visible
-    // to {@link EventProcessor}s
-    // @param event to be published from the {@link RingBuffer<T>}
-    virtual void Publish(const long& sequence) = 0;
-
-    // Publish the batch of events from to the {@link RingBuffer<T>}.
-    // @param sequenceBatch to be published.
-    virtual void Publish(const BatchDescriptor& batch_descriptor) = 0;
 };
 
 class WaitStrategyInterface {
@@ -185,7 +152,7 @@ class WaitStrategyInterface {
                             const int64_t & timeout_micros) = 0;
 
     // Signal those waiting that the {@link RingBuffer} cursor has advanced.
-    virtual void SignalAll() = 0;
+    virtual void SignalAllWhenBlocking() = 0;
 };
 
 template<typename T>

@@ -93,7 +93,7 @@ class BlockingStrategy :  public WaitStrategyInterface {
         return available_sequence;
     }
 
-    virtual void SignalAll() {
+    virtual void SignalAllWhenBlocking() {
         consumer_notify_condition_.notify_all();
     }
 
@@ -165,7 +165,7 @@ class YieldingStrategy :  public WaitStrategyInterface {
         return available_sequence;
     }
 
-    virtual void SignalAll() {}
+    virtual void SignalAllWhenBlocking() {}
 };
 
 
@@ -231,7 +231,7 @@ class BusySpinStrategy :  public WaitStrategyInterface {
         return available_sequence;
     }
 
-    virtual void SignalAll() {}
+    virtual void SignalAllWhenBlocking() {}
 };
 
 WaitStrategyInterface* CreateWaitStrategy(WaitStrategyOption wait_option) {
