@@ -26,23 +26,9 @@ class SingleThreadedStrategy :  public ClaimStrategyInterface {
 
     virtual int64_t IncrementAndGet(
             const std::vector<Sequence*>& dependent_sequences) {
-        int64_t next_sequence = sequence_.sequence() + 1L;
-        sequence_.set_sequence(next_sequence);
+        int64_t next_sequence = sequence_.IncrementAndGet(1L);
         WaitForFreeSlotAt(next_sequence, dependent_sequences);
         return next_sequence;
-    }
-
-    virtual int64_t IncrementAndGet(const int& delta,
-            const std::vector<Sequence*>& dependent_sequences) {
-        int64_t next_sequence = sequence_.sequence() + delta;
-        sequence_.set_sequence(next_sequence);
-        WaitForFreeSlotAt(next_sequence, dependent_sequences);
-        return next_sequence;
-    }
-    virtual void SetSequence(const int64_t& sequence,
-            const std::vector<Sequence*>& dependent_sequences) {
-        sequence_.set_sequence(sequence);
-        WaitForFreeSlotAt(sequence, dependent_sequences);
     }
 
     virtual bool HasAvalaibleCapacity(
@@ -55,6 +41,19 @@ class SingleThreadedStrategy :  public ClaimStrategyInterface {
                 return false;
         }
         return true;
+    }
+
+    virtual int64_t IncrementAndGet(const int& delta,
+            const std::vector<Sequence*>& dependent_sequences) {
+        int64_t next_sequence = sequence_.IncrementAndGet(delta);
+        sequence_.set_sequence(next_sequence);
+        WaitForFreeSlotAt(next_sequence, dependent_sequences);
+        return next_sequence;
+    }
+    virtual void SetSequence(const int64_t& sequence,
+            const std::vector<Sequence*>& dependent_sequences) {
+        sequence_.set_sequence(sequence);
+        WaitForFreeSlotAt(sequence, dependent_sequences);
     }
 
     virtual void SerialisePublishing(const int64_t& sequence,
@@ -76,8 +75,8 @@ class SingleThreadedStrategy :  public ClaimStrategyInterface {
     }
 
     const int buffer_size_;
-    Sequence sequence_;
-    Sequence min_gating_sequence_;
+    PaddedLong sequence_;
+    PaddedLong min_gating_sequence_;
 
     DISALLOW_COPY_AND_ASSIGN(SingleThreadedStrategy);
 };

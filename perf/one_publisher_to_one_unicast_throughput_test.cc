@@ -27,8 +27,8 @@ class DummyBatchHandler : public EventHandlerInterface<DummyEvent> {
 
 class DummyEventFactory : public EventFactoryInterface<DummyEvent> {
  public:
-    virtual DummyEvent NewInstance() const {
-        return DummyEvent();
+    virtual DummyEvent* NewInstance(int size) const {
+        return new DummyEvent[size];
     };
 };
 

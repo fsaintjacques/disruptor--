@@ -26,25 +26,17 @@ class RingBuffer : public Sequencer {
                       wait_strategy_option),
             buffer_size_(buffer_size),
             mask_(buffer_size - 1),
-            events_(buffer_size) {
-        Fill(event_factory);
+            events_(event_factory->NewInstance(buffer_size)) {
     }
 
     T* Get(const int64_t& sequence) {
         return &events_[sequence & mask_];
     }
 
- private:
-    void Fill(EventFactoryInterface<T>* event_factory) {
-        for (int i = 0 ; i < buffer_size_; i++) {
-            events_[i] = event_factory->NewInstance();
-        }
-    }
-
     // Members
     int buffer_size_;
     int mask_;
-    std::vector<T> events_;
+    T* events_;
 };
 
 };  // namespace disruptor

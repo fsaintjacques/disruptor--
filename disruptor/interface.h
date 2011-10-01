@@ -74,7 +74,7 @@ class SequenceBarrierInterface {
 template<typename T>
 class EventFactoryInterface {
  public:
-     virtual T NewInstance() const = 0;
+     virtual T* NewInstance(int size) const = 0;
 };
 
 template<typename T>
