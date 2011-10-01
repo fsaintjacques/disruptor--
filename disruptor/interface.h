@@ -4,7 +4,7 @@
 #include <vector>
 
 #include "disruptor/sequence.h"
-#include "disruptor/sequence_batch.h"
+#include "disruptor/batch_descriptor.h"
 #include "disruptor/event.h"
 
 #ifndef DISRUPTOR_INTERFACE_H_ // NOLINT
@@ -14,32 +14,24 @@ namespace disruptor {
 
 class ClaimStrategyInterface {
  public:
-    // Claim the next sequence index in the {@link RingBuffer} and increment.
-    // @return the {@link AbstractEvent} index to be used for the publisher.
-    virtual int64_t IncrementAndGet() = 0;
+    virtual int64_t IncrementAndGet(
+            const std::vector<Sequence*> dependent_sequences) = 0;
+    virtual int64_t IncrementAndGet(const int& delta,
+            const std::vector<Sequence*> dependent_sequences) = 0;
 
-    // Increment by a delta and get the result.
-    // @param delta to increment by.
-    // @return the result after incrementing.
-    virtual int64_t IncrementAndGet(const int64_t& delta) = 0;
+    virtual int64_t IncrementAndGet(
+            const std::vector<Sequence*> dependent_sequences) = 0;
+    virtual int64_t IncrementAndGet(const int& delta,
+            const std::vector<Sequence*> dependent_sequences) = 0;
+    virtual int64_t IncrementAndGet(const int64_t& sequence,
+            const std::vector<Sequence*> dependent_sequences) = 0;
 
-    // Set the current sequence value for claiming {@link AbstractEvent} in
-    // the {@link RingBuffer}
-    // @param sequence to be set as the current value.
     virtual void SetSequence(const int64_t& sequence) = 0;
 
-    // Ensure dependent processors are in range without over taking them for
-    // the buffer size.
-    // @param sequence to check is in range
-    // @param dependentSequences to be checked for range.
-    virtual void EnsureProcessorsAreInRange(const int64_t& sequence,
+    virtual bool HasAvalaibleCapacity(
         const std::vector<Sequence*>& dependent_sequences) = 0;
 
-    // Serialise publishing in sequence.
-    // @param cursor to serialise against.
-    // @param sequence sequence to be applied
-    // @param batchSize of the sequence.
-    virtual void SerialisePublishing(const Sequence& cursor,
+    virtual void SerialisePublishing(const long& cursor,
                                      const int64_t& sequence,
                                      const int64_t& batch_size) = 0;
 };
@@ -141,7 +133,7 @@ class PublisherPortInterface {
     // Claim the next batch of {@link AbstractEvent}s in sequence.
     // @param sequenceBatch to be updated for the batch range.
     // @return the updated sequenceBatch.
-    virtual SequenceBatch* NextEvents(SequenceBatch* sequence_batch) = 0;
+    virtual BatchDescriptor* NextEvents(BatchDescriptor* batch_descriptor) = 0;
 
     // Publish an event back to the {@link RingBuffer<T>} to make it visible
     // to {@link EventProcessor}s
@@ -150,7 +142,7 @@ class PublisherPortInterface {
 
     // Publish the batch of events from to the {@link RingBuffer<T>}.
     // @param sequenceBatch to be published.
-    virtual void Publish(const SequenceBatch& sequence_batch) = 0;
+    virtual void Publish(const BatchDescriptor& batch_descriptor) = 0;
 };
 
 class WaitStrategyInterface {

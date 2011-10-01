@@ -22,32 +22,37 @@ class SingleThreadedStrategy :  public ClaimStrategyInterface {
     SingleThreadedStrategy(const int& buffer_size) :
         buffer_size_(buffer_size),
         sequence_(kInitialCursorValue),
-        min_processor_sequence_(kInitialCursorValue) {}
+        min_gating_sequence_(kInitialCursorValue) {}
 
-    virtual int64_t IncrementAndGet(const int64_t& delta) {
-        sequence_ += delta;
-        return sequence_;
+    virtual int64_t IncrementAndGet(
+            const std::vector<Sequence*>& dependent_sequences) {
+        int64_t next_sequence = sequence_.sequence() + 1L;
+        sequence_.set_sequence(next_sequence);
+        WaitForFreeSlotAt(next_sequence, dependent_sequences);
+        return next_sequence;
     }
 
-    virtual int64_t IncrementAndGet() {
-        return ++sequence_;
+    virtual int64_t IncrementAndGet(const int& delta,
+            const std::vector<Sequence*>& dependent_sequences) {
+        int64_t next_sequence = sequence_.sequence() + delta;
+        sequence_.set_sequence(next_sequence);
+        WaitForFreeSlotAt(next_sequence, dependent_sequences);
+        return next_sequence;
     }
-
     virtual void SetSequence(const int64_t& sequence) {
-        sequence_ = sequence;
+        sequence_.set_sequence(sequence);
     }
 
-    virtual void EnsureProcessorsAreInRange(const int64_t& sequence,
-        const std::vector<Sequence*>& dependent_sequences) {
-        int64_t wrap_point = sequence - buffer_size_;
-        if (wrap_point > min_processor_sequence_) {
+    virtual bool HasAvalaibleCapacity(
+            const std::vector<Sequence*>& dependent_sequences) {
+        int64_t wrap_point = sequence_.sequence() + 1L - buffer_size_;
+        if (wrap_point > min_gating_sequence_.sequence()) {
             int64_t min_sequence = GetMinimumSequence(dependent_sequences);
-            while (wrap_point > min_sequence) {
-                std::this_thread::sleep_for(std::chrono::microseconds(100));
-                min_sequence = GetMinimumSequence(dependent_sequences);
-            }
-            min_processor_sequence_ = min_sequence;
+            min_gating_sequence_.set_sequence(min_sequence);
+            if (wrap_point > min_sequence)
+                return false;
         }
+        return true;
     }
 
     virtual void SerialisePublishing(const Sequence& cursor,
@@ -57,9 +62,20 @@ class SingleThreadedStrategy :  public ClaimStrategyInterface {
  private:
     SingleThreadedStrategy();
 
+    void WaitForFreeSlotAt(const long& sequence, 
+            const std::vector<Sequence*>& dependent_sequences) {
+        int64_t wrap_point = sequence - buffer_size_;
+        if (wrap_point > min_gating_sequence_.sequence()) {
+            long min_sequence;
+            while (wrap_point > (min_sequence = GetMinimumSequence(dependent_sequences))) {
+                std::this_thread::yield();
+            }
+        }
+    }
+
     const int buffer_size_;
-    int64_t sequence_;
-    int64_t min_processor_sequence_;
+    Sequence sequence_;
+    Sequence min_gating_sequence_;
 
     DISALLOW_COPY_AND_ASSIGN(SingleThreadedStrategy);
 };
@@ -117,7 +133,7 @@ class MultiThreadedStrategy :  public ClaimStrategyInterface {
 
     const int buffer_size_;
     Sequence sequence_;
-    Sequence min_processor_sequence_;
+    Sequence min_gating_sequence_;
 
     DISALLOW_COPY_AND_ASSIGN(MultiThreadedStrategy);
 };

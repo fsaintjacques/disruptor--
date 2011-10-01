@@ -69,28 +69,28 @@ class RingBuffer :  public PublisherPortInterface<T> {
         return &event;
     }
 
-    SequenceBatch* NextEvents(SequenceBatch* sequence_batch) {
+    BatchDescriptor* NextEvents(BatchDescriptor* batch_descriptor) {
         long sequence = claim_strategy_->IncrementAndGet(
-                sequence_batch->get_size());
-        sequence_batch->set_end(sequence);
+                batch_descriptor->get_size());
+        batch_descriptor->set_end(sequence);
         claim_strategy_->EnsureProcessorsAreInRange(
                 sequence, processor_sequences_to_track_);
 
-        for (long i = sequence_batch->get_start(),
-                end = sequence_batch->get_end(); i <= end; i++) {
+        for (long i = batch_descriptor->get_start(),
+                end = batch_descriptor->get_end(); i <= end; i++) {
             Event<T>& event = events_[i & mask_];
             event.set_sequence(i);
         }
 
-        return sequence_batch;
+        return batch_descriptor;
     }
 
     void Publish(const long& sequence) {
         Publish(sequence, 1);
     }
 
-    void Publish(const SequenceBatch& sequence_batch) {
-        Publish(sequence_batch.get_end(), sequence_batch.get_size());
+    void Publish(const BatchDescriptor& batch_descriptor) {
+        Publish(batch_descriptor.get_end(), batch_descriptor.get_size());
     }
 
 
