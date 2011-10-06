@@ -5,7 +5,6 @@ ACLOCAL_AMFLAGS = ${ACLOCAL_FLAGS}
 disruptordir = $(includedir)/disruptor
 disruptor_HEADERS = disruptor/batch_descriptor.h \
 					disruptor/claim_strategy.h \
-				    disruptor/event.h \
 				    disruptor/event_processor.h \
 				    disruptor/event_publisher.h \
 				    disruptor/exceptions.h \
