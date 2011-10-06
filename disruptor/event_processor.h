@@ -22,7 +22,7 @@ class BatchEventProcessor : public EventProcessorInterface<T> {
     virtual Sequence* GetSequence() { return &sequence_; }
 
     virtual void Halt() {
-        running_.store(false, std::memory_order::memory_order_release);
+        running_.store(false);
         sequence_barrier_->Alert();
     }
 
@@ -60,6 +60,7 @@ class BatchEventProcessor : public EventProcessorInterface<T> {
             }
         }
 
+        event_handler_->OnShutDown();
         running_.store(false);
     }
 
