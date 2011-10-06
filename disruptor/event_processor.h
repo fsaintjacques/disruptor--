@@ -60,7 +60,7 @@ class BatchEventProcessor : public EventProcessorInterface<T> {
             }
         }
 
-        event_handler_->OnShutDown();
+        event_handler_->OnShutdown();
         running_.store(false);
     }
 
