@@ -56,7 +56,7 @@ int main(int arc, char** argv) {
 
     std::vector<Sequence*> sequence_to_track(0);
     std::unique_ptr<ProcessingSequenceBarrier> barrier(
-        ring_buffer.SetTrackedProcessor(sequence_to_track));
+        ring_buffer.NewBarrier(sequence_to_track));
 
     DummyBatchHandler dummy_handler;
     BatchEventProcessor<DummyEvent> processor(&ring_buffer,
