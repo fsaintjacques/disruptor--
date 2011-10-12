@@ -34,13 +34,17 @@ class RingBuffer : public Sequencer {
     RingBuffer(EventFactoryInterface<T>* event_factory,
                int buffer_size,
                ClaimStrategyOption claim_strategy_option,
-               WaitStrategyOption wait_strategy_option) : 
+               WaitStrategyOption wait_strategy_option) :
             Sequencer(buffer_size,
                       claim_strategy_option,
                       wait_strategy_option),
             buffer_size_(buffer_size),
             mask_(buffer_size - 1),
             events_(event_factory->NewInstance(buffer_size)) {
+    }
+
+    ~RingBuffer() {
+        delete[] events_;
     }
 
     // Get the event for a given sequence in the RingBuffer.
@@ -50,7 +54,7 @@ class RingBuffer : public Sequencer {
     T* Get(const int64_t& sequence) {
         return &events_[sequence & mask_];
     }
-    
+
  private:
     // Members
     int buffer_size_;
