@@ -18,7 +18,7 @@ namespace disruptor {
 class Sequencer {
  public:
     // Construct a Sequencer with the selected strategies.
-    // 
+    //
     // @param buffer_size over which sequences are valid.
     // @param claim_strategy_option for those claiming sequences.
     // @param wait_strategy_option for those waiting on sequences.
@@ -55,7 +55,7 @@ class Sequencer {
                                              sequences_to_track);
     }
 
-    // Create a new {@link BatchDescriptor} that is the minimum of the 
+    // Create a new {@link BatchDescriptor} that is the minimum of the
     // requested size and the buffer_size.
     //
     // @param size for the new batch.
@@ -127,7 +127,7 @@ class Sequencer {
     // Force the publication of a cursor sequence.
     //
     // Only use this method when forcing a sequence and you are sure only one
-    // publisher exists. This will cause the cursor to advance to this 
+    // publisher exists. This will cause the cursor to advance to this
     // sequence.
     //
     // @param sequence to which is to be forced for publication.
@@ -147,7 +147,7 @@ class Sequencer {
     // Members
     const int buffer_size_;
 
-    Sequence cursor_;
+    PaddedSequence cursor_;
     std::vector<Sequence*> gating_sequences_;
 
     ClaimStrategyInterface* claim_strategy_;
