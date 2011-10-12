@@ -25,8 +25,7 @@ class RingBuffer : public Sequencer {
     // Construct a RingBuffer with the full option set.
     //
     // @param event_factory to instance new entries for filling the RingBuffer.
-    // @param size of the RingBuffer that will be rounded up to the next power
-    // of 2.
+    // @param buffer_size of the RingBuffer, must be a power of 2.
     // @param claim_strategy_option threading strategy for publishers claiming
     // entries in the ring.
     // @param wait_strategy_option waiting strategy employed by
