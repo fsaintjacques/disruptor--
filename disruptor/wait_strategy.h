@@ -101,6 +101,8 @@ class BlockingStrategy :  public WaitStrategyInterface {
  private:
     std::recursive_mutex mutex_;
     std::condition_variable_any consumer_notify_condition_;
+
+    DISALLOW_COPY_AND_ASSIGN(BlockingStrategy);
 };
 
 // Sleeping strategy
@@ -179,6 +181,8 @@ class SleepingStrategy :  public WaitStrategyInterface {
 
         return counter;
     }
+
+    DISALLOW_COPY_AND_ASSIGN(SleepingStrategy);
 };
 
 // Yielding strategy that uses a sleep(0) for {@link EventProcessor}s waiting
@@ -256,6 +260,8 @@ class YieldingStrategy :  public WaitStrategyInterface {
 
         return counter;
     }
+
+    DISALLOW_COPY_AND_ASSIGN(YieldingStrategy);
 };
 
 
@@ -318,6 +324,8 @@ class BusySpinStrategy :  public WaitStrategyInterface {
     }
 
     virtual void SignalAllWhenBlocking() {}
+
+    DISALLOW_COPY_AND_ASSIGN(BusySpinStrategy);
 };
 
 WaitStrategyInterface* CreateWaitStrategy(WaitStrategyOption wait_option) {

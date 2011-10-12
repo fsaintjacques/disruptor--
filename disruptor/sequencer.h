@@ -152,6 +152,8 @@ class Sequencer {
 
     ClaimStrategyInterface* claim_strategy_;
     WaitStrategyInterface* wait_strategy_;
+
+    DISALLOW_COPY_AND_ASSIGN(Sequencer);
 };
 
 };  // namespace disruptor

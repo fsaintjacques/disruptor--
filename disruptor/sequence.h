@@ -38,7 +38,7 @@ class Sequence {
 
     // Increment and return the value of the {@link Sequence}.
     //
-    // @param increment the {@link Sequence}. 
+    // @param increment the {@link Sequence}.
     // @return the new value incremented.
     int64_t IncrementAndGet(const int64_t& increment) {
         return value_.fetch_add(increment, std::memory_order::memory_order_release) + increment;
@@ -63,6 +63,7 @@ class PaddedSequence : public Sequence {
  private:
     // padding
     int64_t padding_[SEQUENCE_PADDING_LENGTH];
+
     DISALLOW_COPY_AND_ASSIGN(PaddedSequence);
 };
 

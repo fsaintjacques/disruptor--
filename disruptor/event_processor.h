@@ -73,6 +73,8 @@ class BatchEventProcessor : public EventProcessorInterface<T> {
     RingBuffer<T>* ring_buffer_;
     SequenceBarrierInterface* sequence_barrier_;
     EventHandlerInterface<T>* event_handler_;
+
+    DISALLOW_COPY_AND_ASSIGN(BatchEventProcessor);
 };
 
 

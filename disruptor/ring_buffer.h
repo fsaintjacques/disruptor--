@@ -59,6 +59,8 @@ class RingBuffer : public Sequencer {
     int buffer_size_;
     int mask_;
     T* events_;
+
+    DISALLOW_COPY_AND_ASSIGN(RingBuffer);
 };
 
 };  // namespace disruptor
