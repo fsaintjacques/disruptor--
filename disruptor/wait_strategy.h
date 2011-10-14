@@ -40,6 +40,8 @@ enum WaitStrategyOption {
 // important as CPU resource.
 class BlockingStrategy :  public WaitStrategyInterface {
  public:
+    BlockingStrategy() {}
+
     virtual int64_t WaitFor(const std::vector<Sequence*>& dependents,
                             const Sequence& cursor,
                             const SequenceBarrierInterface& barrier,
@@ -108,6 +110,8 @@ class BlockingStrategy :  public WaitStrategyInterface {
 // Sleeping strategy
 class SleepingStrategy :  public WaitStrategyInterface {
  public:
+    SleepingStrategy() {}
+
     virtual int64_t WaitFor(const std::vector<Sequence*>& dependents,
                             const Sequence& cursor,
                             const SequenceBarrierInterface& barrier,
@@ -190,6 +194,8 @@ class SleepingStrategy :  public WaitStrategyInterface {
 // CPU resource.
 class YieldingStrategy :  public WaitStrategyInterface {
  public:
+    YieldingStrategy() {}
+
     virtual int64_t WaitFor(const std::vector<Sequence*>& dependents,
                             const Sequence& cursor,
                             const SequenceBarrierInterface& barrier,
@@ -272,6 +278,8 @@ class YieldingStrategy :  public WaitStrategyInterface {
 // CPU cores.
 class BusySpinStrategy :  public WaitStrategyInterface {
  public:
+    BusySpinStrategy() {}
+
     virtual int64_t WaitFor(const std::vector<Sequence*>& dependents,
                             const Sequence& cursor,
                             const SequenceBarrierInterface& barrier,
