@@ -1,4 +1,4 @@
-// Copyright 2011 <François Saint-Jacques>
+// opyright 2011 <François Saint-Jacques>
 
 #include <thread>
 #include <vector>
@@ -31,6 +31,13 @@ class SingleThreadedStrategy :  public ClaimStrategyInterface {
         return next_sequence;
     }
 
+    virtual int64_t IncrementAndGet(const int& delta,
+            const std::vector<Sequence*>& dependent_sequences) {
+        int64_t next_sequence = sequence_.IncrementAndGet(delta);
+        WaitForFreeSlotAt(next_sequence, dependent_sequences);
+        return next_sequence;
+    }
+
     virtual bool HasAvalaibleCapacity(
             const std::vector<Sequence*>& dependent_sequences) {
         int64_t wrap_point = sequence_.sequence() + 1L - buffer_size_;
@@ -43,13 +50,6 @@ class SingleThreadedStrategy :  public ClaimStrategyInterface {
         return true;
     }
 
-    virtual int64_t IncrementAndGet(const int& delta,
-            const std::vector<Sequence*>& dependent_sequences) {
-        int64_t next_sequence = sequence_.IncrementAndGet(delta);
-        sequence_.set_sequence(next_sequence);
-        WaitForFreeSlotAt(next_sequence, dependent_sequences);
-        return next_sequence;
-    }
     virtual void SetSequence(const int64_t& sequence,
             const std::vector<Sequence*>& dependent_sequences) {
         sequence_.set_sequence(sequence);
@@ -91,51 +91,102 @@ class MultiThreadedStrategy :  public ClaimStrategyInterface {
         sequence_(kInitialCursorValue),
         min_processor_sequence_(kInitialCursorValue) {}
 
-    virtual int64_t IncrementAndGet(const int64_t& delta) {
-        return sequence_.IncrementAndGet(delta);
+    virtual int64_t IncrementAndGet(
+            const std::vector<Sequence*>& dependent_sequences) {
+        WaitForCapacity(dependent_sequences, min_gating_sequence_local_);
+        int64_t next_sequence = sequence_.IncrementAndGet();
+        WaitForFreeSlotAt(next_sequence,
+                          dependent_sequences,
+                          min_gating_sequence_local_);
+        return next_sequence;
     }
 
-    virtual int64_t IncrementAndGet() {
-        return IncrementAndGet(1L);
+    virtual int64_t IncrementAndGet(const int& delta,
+            const std::vector<Sequence*>& dependent_sequences) {
+        int64_t next_sequence = sequence_.IncrementAndGet(delta);
+        WaitForFreeSlotAt(next_sequence,
+                          dependent_sequences,
+                          min_gating_sequence_local_);
+        return next_sequence;
+    }
+    virtual void SetSequence(const int64_t& sequence,
+            const std::vector<Sequence*>& dependent_sequences) {
+        sequence_.set_sequence(sequence);
+        WaitForFreeSlotAt(sequence,
+                          dependent_sequences,
+                          min_gating_sequence_local_);
     }
 
-    virtual void SetSequence(const int64_t& sequence) {
-        return sequence_.set_sequence(sequence);
-    }
-
-    virtual void EnsureProcessorsAreInRange(const int64_t& sequence,
-        const std::vector<Sequence*>& dependent_sequences) {
-        int64_t wrap_point = sequence - buffer_size_;
-        if (wrap_point > min_processor_sequence_.sequence()) {
+    virtual bool HasAvalaibleCapacity(
+            const std::vector<Sequence*>& dependent_sequences) {
+        const int64_t wrap_point = sequence_.sequence() + 1L - buffer_size_;
+        if (wrap_point > min_gating_sequence_local_.sequence()) {
             int64_t min_sequence = GetMinimumSequence(dependent_sequences);
-            while (wrap_point > min_sequence) {
-                std::this_thread::sleep_for(std::chrono::microseconds(100));
-                min_sequence = GetMinimumSequence(dependent_sequences);
-            }
-            min_processor_sequence_.set_sequence(min_sequence);
+            min_gating_sequence_local_.set_sequence(min_sequence);
+            if (wrap_point > min_sequence)
+                return false;
         }
+        return true;
     }
 
     virtual void SerialisePublishing(const Sequence& cursor,
                                      const int64_t& sequence,
                                      const int64_t& batch_size) {
         int64_t expected_sequence = sequence - batch_size;
-        int counter = 1000;
+        int counter = retries;
 
         while (expected_sequence != cursor.sequence()) {
             if (0 == --counter) {
-                counter = 1000;
-                std::this_thread::sleep_for(std::chrono::microseconds(100));
+                counter = retries;
+                std::this_thread::yield();
             }
         }
     }
 
  private:
-    MultiThreadedStrategy();
+    // Methods
+    void WaitForCapacity(const std::vector<Sequence*>& dependent_sequences,
+                         const MutableLong& min_gating_sequence) {
+        const int64_t wrap_point = sequence_.sequence() + 1L - buffer_size_;
+        if (wrap_point > min_gating_sequence.sequence()) {
+            int counter = retries;
+            int64_t min_sequence;
+            while (wrap_point > (min_sequence = GetMinimumSequence(dependent_sequences))) {
+                counter = ApplyBackPressure(counter);
+            }
+            min_gating_sequence.set_sequence(min_sequence);
+        }
+    }
+
+    void WaitForFreeSlotAt(const int64_t& sequence,
+                           const std::vector<Sequence*>& dependent_sequences,
+                           const MutableLong& min_gating_sequence) {
+        const int64_t wrap_point = sequence - buffer_size_;
+        if (wrap_point > min_gating_sequence.sequence()) {
+            int64_t min_sequence;
+            while (wrap_point > (min_sequence = GetMinimumSequence(dependent_sequences))) {
+                std::this_thread::yield();
+            }
+            min_gating_sequence.set_sequence(min_sequence);
+        }
+    }
+
+    int ApplyBackPressure(int counter) {
+        if (0 != counter) {
+            --counter;
+            std::this_thread::yield();
+        } else {
+            std::this_thread::sleep_for(std::chrono::milliseconds(1));
+        }
+
+        return counter;
+    }
 
     const int buffer_size_;
-    Sequence sequence_;
-    Sequence min_gating_sequence_;
+    PaddedSequence sequence_;
+    thread_local PaddedLong min_gating_sequence_local_;
+
+    const int retries = 100;
 
     DISALLOW_COPY_AND_ASSIGN(MultiThreadedStrategy);
 };

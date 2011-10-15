@@ -7,8 +7,10 @@
 #ifndef CACHE_LINE_SIZE_IN_BYTES // NOLINT
 #define CACHE_LINE_SIZE_IN_BYTES 64 // NOLINT
 #endif // NOLINT
-#define SEQUENCE_PADDING_LENGTH \
+#define ATOMIC_SEQUENCE_PADDING_LENGTH \
     (CACHE_LINE_SIZE_IN_BYTES - sizeof(std::atomic<int64_t>))/8
+#define SEQUENCE_PADDING_LENGTH \
+    (CACHE_LINE_SIZE_IN_BYTES - sizeof(int64_t))/8
 
 #ifndef DISRUPTOR_SEQUENCE_H_ // NOLINT
 #define DISRUPTOR_SEQUENCE_H_ // NOLINT
@@ -62,17 +64,17 @@ class PaddedSequence : public Sequence {
 
  private:
     // padding
-    int64_t padding_[SEQUENCE_PADDING_LENGTH];
+    int64_t padding_[ATOMIC_SEQUENCE_PADDING_LENGTH];
 
     DISALLOW_COPY_AND_ASSIGN(PaddedSequence);
 };
 
-// Cache line padded non-atomic sequence counter.
+// Non-atomic sequence counter.
 //
 // This counter is not thread safe.
-class PaddedLong {
+class MutableLong {
  public:
-     PaddedLong(int64_t initial_value = kInitialCursorValue) :
+     MutableLong(int64_t initial_value = kInitialCursorValue) :
          sequence_(initial_value) {}
 
      int64_t sequence() const { return sequence_; }
@@ -82,7 +84,18 @@ class PaddedLong {
      int64_t IncrementAndGet(const int64_t& delta) { sequence_ += delta; return sequence_; }
 
  private:
-     int64_t sequence_;
+     volatile int64_t sequence_;
+};
+
+// Cache line padded non-atomic sequence counter.
+//
+// This counter is not thread safe.
+class PaddedLong : public MutableLong {
+ public:
+     PaddedLong(int64_t initial_value = kInitialCursorValue) :
+         MutableLong(initial_value) {}
+ private:
+     int64_t padding_[SEQUENCE_PADDING_LENGTH];
 };
 
 };  // namespace throughput
