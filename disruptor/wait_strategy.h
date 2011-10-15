@@ -149,6 +149,7 @@ class SleepingStrategy :  public WaitStrategyInterface {
         if (0 == dependents.size()) {
             while ((available_sequence = cursor.sequence()) < sequence) {
                 counter = ApplyWaitMethod(barrier, counter);
+                gettimeofday(&end_time, NULL);
                 int64_t end_micro = end_time.tv_sec*1000000 + end_time.tv_usec;
                 if (timeout_micros < (end_micro - start_micro))
                     break;
