@@ -2,10 +2,29 @@
 #include <exception>
 
 #include "disruptor/ring_buffer.h"
+
 #ifndef DISRUPTOR_EVENT_PROCESSOR_H_ // NOLINT
 #define DISRUPTOR_EVENT_PROCESSOR_H_ // NOLINT
 
 namespace disruptor {
+
+template <typename T>
+class NoOpEventProcessor : public EventProcessorInterface<T> {
+ public:
+    NoOpEventProcessor(RingBuffer<T>* ring_buffer) :
+        ring_buffer_(ring_buffer) { }
+
+    virtual Sequence* GetSequence() {
+        return ring_buffer_->GetSequencePtr();
+    }
+
+    virtual void Halt() {}
+
+    virtual void Run() {}
+
+ private:
+    RingBuffer<T>* ring_buffer_;
+};
 
 template <typename T>
 class BatchEventProcessor : public EventProcessorInterface<T> {
