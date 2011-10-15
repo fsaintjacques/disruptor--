@@ -1,5 +1,7 @@
 // Copyright 2011 <François Saint-Jacques>
 
+#include "disruptor/sequence.h"
+
 #ifndef DISRUPTOR_BATCH_DESCRIPTOR_H_  // NOLINT
 #define DISRUPTOR_BATCH_DESCRIPTOR_H_  // NOLINT
 
