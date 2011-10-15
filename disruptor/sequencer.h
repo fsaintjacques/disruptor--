@@ -81,7 +81,7 @@ class Sequencer {
     //
     // @return true if the buffer has the capacity to allocated another event.
     bool HasAvalaibleCapacity() {
-        claim_strategy_->HasAvalaibleCapacity(gating_sequences_);
+        return claim_strategy_->HasAvalaibleCapacity(gating_sequences_);
     }
 
     // Claim the next event in sequence for publishing to the {@link RingBuffer}.
