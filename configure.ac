@@ -32,4 +32,5 @@ AC_SUBST([AM_LDFLAGS])
 
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([perf/Makefile])
+AC_CONFIG_FILES([test/Makefile])
 AC_OUTPUT
