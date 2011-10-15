@@ -30,7 +30,7 @@ class DummyBatchHandler : public EventHandlerInterface<DummyEvent> {
 
 class DummyEventFactory : public EventFactoryInterface<DummyEvent> {
  public:
-    virtual DummyEvent* NewInstance(int size) const {
+    virtual DummyEvent* NewInstance(const int& size) const {
         return new DummyEvent[size];
     };
 };
