@@ -14,3 +14,4 @@ missing
 
 # generated binaries
 perf/perf-1P-1EP
+test/*_test
