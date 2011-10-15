@@ -179,6 +179,25 @@ class EventProcessorInterface {
     virtual void Halt() = 0;
 };
 
+// Callback handler for uncaught exception in the event processing cycle
+// of the {@link BatchEventProcessor}.
+//
+// @param <T> event type stored in the {@link RingBuffer}.
+template<typename T>
+class ExceptionHandlerInterface {
+ public:
+    // Strategy for handling uncaught exceptions when processing an event.
+    // If the strategy wishes to suspend further processing by the
+    // {@link BatchEventProcessor} then it should throw a std::runtime_error.
+    //
+    // @param exception that propagated from the {@link EventHandler}.
+    // @param sequence of the event which caused the exception.
+    // @param event being processed when the exception occured.
+    virtual void Handle(const std::exception& exception,
+                        const int64_t& sequence,
+                        T* event) = 0;
+};
+
 // Strategy employed for making {@link EventProcessor}s wait on a cursor
 // {@link Sequence}.
 class WaitStrategyInterface {

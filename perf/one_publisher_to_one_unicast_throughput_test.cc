@@ -9,6 +9,7 @@
 #include <disruptor/ring_buffer.h>
 #include <disruptor/event_publisher.h>
 #include <disruptor/event_processor.h>
+#include <disruptor/exception_handler.h>
 
 struct DummyEvent {
     DummyEvent() : count(0) {};
@@ -59,9 +60,11 @@ int main(int arc, char** argv) {
         ring_buffer.NewBarrier(sequence_to_track));
 
     DummyBatchHandler dummy_handler;
+    IgnoreExceptionHandler<DummyEvent> dummy_exception_handler;
     BatchEventProcessor<DummyEvent> processor(&ring_buffer,
                                               (SequenceBarrierInterface*) barrier.get(),
-                                              &dummy_handler);
+                                              &dummy_handler,
+                                              &dummy_exception_handler);
 
     std::thread consumer(std::ref<BatchEventProcessor<DummyEvent>>(processor));
 

@@ -31,11 +31,13 @@ class BatchEventProcessor : public EventProcessorInterface<T> {
  public:
     BatchEventProcessor(RingBuffer<T>* ring_buffer,
                         SequenceBarrierInterface* sequence_barrier,
-                        EventHandlerInterface<T>* event_handler) :
+                        EventHandlerInterface<T>* event_handler,
+                        ExceptionHandlerInterface<T>* exception_handler) :
             running_(false),
             ring_buffer_(ring_buffer),
             sequence_barrier_(sequence_barrier),
-            event_handler_(event_handler) {}
+            event_handler_(event_handler),
+            exception_handler_(exception_handler) {}
 
 
     virtual Sequence* GetSequence() { return &sequence_; }
@@ -73,7 +75,7 @@ class BatchEventProcessor : public EventProcessorInterface<T> {
                 if (running_.load())
                     break;
             } catch(const std::exception& e) {
-                //TODO(fsaintjacques): exception_handler_->handle(e, event);
+                exception_handler_->Handle(e, next_sequence, event);
                 sequence_.set_sequence(next_sequence);
                 next_sequence++;
             }
@@ -92,6 +94,7 @@ class BatchEventProcessor : public EventProcessorInterface<T> {
     RingBuffer<T>* ring_buffer_;
     SequenceBarrierInterface* sequence_barrier_;
     EventHandlerInterface<T>* event_handler_;
+    ExceptionHandlerInterface<T>* exception_handler_;
 
     DISALLOW_COPY_AND_ASSIGN(BatchEventProcessor);
 };
