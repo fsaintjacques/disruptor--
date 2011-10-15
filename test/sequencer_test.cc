@@ -24,7 +24,7 @@ struct SequencerFixture {
 
     void FillBuffer() {
         for (int i = 0; i < BUFFER_SIZE; i++) {
-            uint64_t sequence = sequencer.Next();
+            int64_t sequence = sequencer.Next();
             sequencer.Publish(sequence);
         }
     }
