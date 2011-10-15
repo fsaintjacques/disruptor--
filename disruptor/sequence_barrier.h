@@ -3,6 +3,7 @@
 #include <memory>
 #include <vector>
 
+#include "disruptor/exceptions.h"
 #include "disruptor/interface.h"
 
 #ifndef DISRUPTOR_SEQUENCE_BARRIER_H_ // NOLINT
