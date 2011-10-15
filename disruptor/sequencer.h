@@ -3,10 +3,10 @@
 #include <vector>
 
 #include "disruptor/batch_descriptor.h"
-#include "disruptor/interface.h"
 #include "disruptor/claim_strategy.h"
-#include "disruptor/wait_strategy.h"
+#include "disruptor/interface.h"
 #include "disruptor/sequence_barrier.h"
+#include "disruptor/wait_strategy.h"
 
 #ifndef DISRUPTOR_SEQUENCER_H_ // NOLINT
 #define DISRUPTOR_SEQUENCER_H_ // NOLINT
@@ -134,6 +134,12 @@ class Sequencer {
     void ForcePublish(const int64_t& sequence) {
         cursor_.set_sequence(sequence);
         wait_strategy_->SignalAllWhenBlocking();
+    }
+
+    // TODO(fsaintjacques): This was added to overcome
+    // NoOpEventProcessor::GetSequence(), this is not a clean solution.
+    Sequence* GetSequencePtr() {
+        return &cursor_;
     }
 
  private:
