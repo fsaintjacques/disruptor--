@@ -111,7 +111,7 @@ class SequenceBarrierInterface {
 template<typename T>
 class EventFactoryInterface {
  public:
-     virtual T* NewInstance(int size) const = 0;
+     virtual T* NewInstance(const int& size) const = 0;
 };
 
 // Callback interface to be implemented for processing events as they become
