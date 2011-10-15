@@ -40,7 +40,7 @@ BOOST_FIXTURE_TEST_CASE(ShouldStartWithValueInitialized, SequencerFixture) {
 }
 
 BOOST_FIXTURE_TEST_CASE(ShouldGetPublishFirstSequence, SequencerFixture) {
-    const uint64_t sequence = sequencer.Next();
+    const int64_t sequence = sequencer.Next();
     BOOST_CHECK(sequencer.GetCursor() == disruptor::kInitialCursorValue);
     BOOST_CHECK(sequence == 0);
 
@@ -55,6 +55,61 @@ BOOST_FIXTURE_TEST_CASE(ShouldIndicateAvailableCapacity, SequencerFixture) {
 BOOST_FIXTURE_TEST_CASE(ShouldIndicateNoAvailableCapacity, SequencerFixture) {
     FillBuffer();
     BOOST_CHECK(sequencer.HasAvalaibleCapacity() == false);
+}
+
+BOOST_FIXTURE_TEST_CASE(ShouldForceClaimSequence, SequencerFixture) {
+    const int64_t claim_sequence = 3;
+    const int64_t sequence = sequencer.Claim(claim_sequence);
+
+    BOOST_CHECK(sequencer.GetCursor() == disruptor::kInitialCursorValue);
+    BOOST_CHECK(sequence == claim_sequence);
+
+    sequencer.ForcePublish(sequence);
+    BOOST_CHECK(sequencer.GetCursor() == claim_sequence);
+}
+
+BOOST_FIXTURE_TEST_CASE(ShouldPublishSequenceBatch, SequencerFixture) {
+    const int batch_size = 3;
+    disruptor::BatchDescriptor batch_descriptor(batch_size);
+    sequencer.Next(&batch_descriptor);
+
+    BOOST_CHECK(sequencer.GetCursor() == disruptor::kInitialCursorValue);
+    BOOST_CHECK(batch_descriptor.end() == disruptor::kInitialCursorValue + batch_size);
+    BOOST_CHECK(batch_descriptor.size() == batch_size);
+
+    sequencer.Publish(batch_descriptor);
+    BOOST_CHECK(sequencer.GetCursor() == disruptor::kInitialCursorValue + batch_size);
+}
+
+BOOST_FIXTURE_TEST_CASE(ShouldWaitOnSequence, SequencerFixture) {
+    std::vector<disruptor::Sequence*> dependents(0);
+    disruptor::ProcessingSequenceBarrier* barrier = sequencer.NewBarrier(dependents);
+
+    const int64_t sequence = sequencer.Next();
+    sequencer.Publish(sequence);
+
+    BOOST_CHECK(sequence == barrier->WaitFor(sequence));
+}
+
+BOOST_FIXTURE_TEST_CASE(ShouldWaitOnSequenceShowingBatchingEffect, SequencerFixture) {
+    std::vector<disruptor::Sequence*> dependents(0);
+    disruptor::ProcessingSequenceBarrier* barrier = sequencer.NewBarrier(dependents);
+
+    sequencer.Publish(sequencer.Next());
+    sequencer.Publish(sequencer.Next());
+
+    const int64_t sequence = sequencer.Next();
+    sequencer.Publish(sequence);
+
+    BOOST_CHECK(sequence == barrier->WaitFor(disruptor::kInitialCursorValue + 1LL));
+}
+
+BOOST_FIXTURE_TEST_CASE(ShouldSignalWaitingProcessorWhenSequenceIsPublished, SequencerFixture) {
+    // TODO(fsaintjacques): implement this method with mutexes
+}
+
+BOOST_FIXTURE_TEST_CASE(ShouldHoldUpPublisherWhenRingIsFull, SequencerFixture) {
+    // TODO(fsaintjacques): implement this method with mutexes
 }
 
 BOOST_AUTO_TEST_SUITE_END()

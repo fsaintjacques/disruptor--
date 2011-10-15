@@ -16,4 +16,4 @@ disruptor_HEADERS = disruptor/batch_descriptor.h \
 				    disruptor/utils.h \
 				    disruptor/wait_strategy.h
 
-SUBDIRS = perf
+SUBDIRS = test perf
