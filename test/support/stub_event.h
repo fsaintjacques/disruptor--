@@ -34,6 +34,26 @@ class StubEventFactory : public EventFactoryInterface<StubEvent> {
     }
 };
 
+class StubBatchHandler : public EventHandlerInterface<StubEvent> {
+ public:
+    virtual void OnEvent(StubEvent* event, const int64_t& sequence, bool end_of_batch) {
+        if (event)
+            event->set_value(sequence);
+    };
+
+    virtual void OnStart() {}
+    virtual void OnShutdown() {}
+};
+
+class StubEventTranslator : public EventTranslatorInterface<StubEvent> {
+ public:
+    virtual StubEvent* TranslateTo(StubEvent* event, const int64_t& sequence) {
+        event->set_value(sequence);
+        return event;
+    };
+
+};
+
 }; // namespace test
 }; // namespace disruptor
 
