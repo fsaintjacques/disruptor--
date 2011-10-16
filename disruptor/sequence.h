@@ -98,6 +98,18 @@ class PaddedLong : public MutableLong {
      int64_t padding_[SEQUENCE_PADDING_LENGTH];
 };
 
-};  // namespace throughput
+int64_t GetMinimumSequence(
+        const std::vector<Sequence*>& sequences) {
+        int64_t minimum = LONG_MAX;
+
+        for (Sequence* sequence_: sequences) {
+            int64_t sequence = sequence_->sequence();
+            minimum = minimum < sequence ? minimum : sequence;
+        }
+
+        return minimum;
+};
+
+};  // namespace disruptor
 
 #endif // DISRUPTOR_SEQUENCE_H_ NOLINT

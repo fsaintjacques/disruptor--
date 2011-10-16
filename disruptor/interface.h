@@ -78,7 +78,7 @@ class SequenceBarrierInterface {
     // @throws AlertException if a status change has occurred for the
     // Disruptor.
     virtual int64_t WaitFor(const int64_t& sequence,
-                          const int64_t& timeout_micro) = 0;
+                            const int64_t& timeout_micro) = 0;
 
     // Delegate a call to the {@link Sequencer#getCursor()}
     //
@@ -238,33 +238,6 @@ class WaitStrategyInterface {
 
     // Signal those waiting that the cursor has advanced.
     virtual void SignalAllWhenBlocking() = 0;
-};
-
-// Helper functions
-
-template<typename T>
-int64_t GetMinimumSequence(
-        const std::vector<EventProcessorInterface<T>*>& event_processors) {
-        int64_t minimum = LONG_MAX;
-
-        for (EventProcessorInterface<T>* event_processor: event_processors) {
-            int64_t sequence = event_processor->GetSequence()->sequence();
-            minimum = minimum < sequence ? minimum : sequence;
-        }
-
-        return minimum;
-};
-
-int64_t GetMinimumSequence(
-        const std::vector<Sequence*>& sequences) {
-        int64_t minimum = LONG_MAX;
-
-        for (Sequence* sequence_: sequences) {
-            int64_t sequence = sequence_->sequence();
-            minimum = minimum < sequence ? minimum : sequence;
-        }
-
-        return minimum;
 };
 
 };  // namespace disruptor
