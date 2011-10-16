@@ -72,7 +72,7 @@ class BatchEventProcessor : public EventProcessorInterface<T> {
 
                 sequence_.set_sequence(next_sequence - 1L);
             } catch(const AlertException& e) {
-                if (running_.load())
+                if (!running_.load())
                     break;
             } catch(const std::exception& e) {
                 exception_handler_->Handle(e, next_sequence, event);
