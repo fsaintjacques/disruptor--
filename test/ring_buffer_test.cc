@@ -64,20 +64,7 @@ std::vector<StubEvent> Waiter(RingBuffer<StubEvent>* ring_buffer,
     return results;
 };
 
-void PublisherLoop(RingBuffer<StubEvent>* ring_buffer,
-                   SequenceBarrierInterface* barrier,
-                   std::atomic<bool>* publisher_completed,
-                   std::atomic<int>* counter) {
-    for (int i = 0; i <= BUFFER_SIZE; i++) {
-        int64_t sequence = ring_buffer->Next();
-        StubEvent* event = ring_buffer->Get(sequence);
-        event->set_value(i);
-        ring_buffer->Publish(sequence);
-        counter->fetch_add(1L);
-    }
 
-    publisher_completed->store(true);
-}
 
 class TestEventProcessor : public EventProcessorInterface<StubEvent> {
  public:
@@ -210,11 +197,28 @@ BOOST_FIXTURE_TEST_CASE(ShouldPreventPublishersOvertakingEventProcessorWrapPoint
     dependency.push_back(processor.GetSequence());
     ring_buffer.set_gating_sequences(dependency);
 
-    std::thread thread(&PublisherLoop,
-                       &ring_buffer,
-                       barrier,
-                       &publisher_completed,
-                       &counter);
+    // Publisher in a seperate thread
+    std::thread thread(
+            // lambda definition
+            [](RingBuffer<StubEvent>* ring_buffer,
+               SequenceBarrierInterface* barrier,
+               std::atomic<bool>* publisher_completed,
+               std::atomic<int>* counter) {
+            // body
+                for (int i = 0; i <= BUFFER_SIZE; i++) {
+                    int64_t sequence = ring_buffer->Next();
+                    StubEvent* event = ring_buffer->Get(sequence);
+                    event->set_value(i);
+                    ring_buffer->Publish(sequence);
+                    counter->fetch_add(1L);
+                }
+
+                publisher_completed->store(true);
+            }, // end of lambda
+            &ring_buffer,
+            barrier,
+            &publisher_completed,
+            &counter);
 
     while (counter.load() < BUFFER_SIZE) {}
 
