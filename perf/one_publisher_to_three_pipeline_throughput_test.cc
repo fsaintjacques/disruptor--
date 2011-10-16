@@ -83,7 +83,7 @@ int main(int arc, char** argv) {
     end = end_time.tv_sec + ((double) end_time.tv_usec / 1000000);
 
     std::cout.precision(15);
-    std::cout << "1P-1EP performance: ";
+    std::cout << "1P-3EP-PIPELINE performance: ";
     std::cout << (iterations * 1.0) / (end - start)
               << " ops/secs" << std::endl;
 
