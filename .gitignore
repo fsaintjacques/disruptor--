@@ -13,5 +13,5 @@ missing
 *.o
 
 # generated binaries
-perf/perf-1P-1EP
+perf/perf-*
 test/*_test
