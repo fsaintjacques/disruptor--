@@ -11,7 +11,7 @@
 
 namespace disruptor {
 
-// Strategies employed for claiming the sequence of events in the 
+// Strategies employed for claiming the sequence of events in the
 // {@link Seqencer} by publishers.
 class ClaimStrategyInterface {
  public:
@@ -37,7 +37,7 @@ class ClaimStrategyInterface {
     virtual int64_t IncrementAndGet(const int& delta,
             const std::vector<Sequence*>& dependent_sequences) = 0;
 
-    // Set the current sequence value for claiming an event in the 
+    // Set the current sequence value for claiming an event in the
     // {@link Sequencer}.
     //
     // @param sequence to be set as the current value.
@@ -131,7 +131,9 @@ class EventHandlerInterface {
     //
     // @throws Exception if the EventHandler would like the exception handled
     // further up the chain.
-    virtual void OnEvent(T* event, const int64_t& sequence, bool end_of_batch) = 0;
+    virtual void OnEvent(const int64_t& sequence,
+                         const bool& end_of_batch,
+                         T* event) = 0;
 
     // Called once on thread start before processing the first event.
     virtual void OnStart() = 0;
@@ -153,11 +155,11 @@ class EventTranslatorInterface {
      // @param event into which the data should be translated.
      // @param sequence that is assigned to events.
      // @return the resulting event after it has been translated.
-     virtual T* TranslateTo(T* event, const int64_t& sequence) = 0;
+     virtual T* TranslateTo(const int64_t& sequence, T* event) = 0;
 };
 
 // EventProcessors wait for events to become available for consumption from
-// the {@link RingBuffer}. An event processor should be associated with a 
+// the {@link RingBuffer}. An event processor should be associated with a
 // thread.
 //
 // @param <T> event implementation storing the data for sharing during exchange

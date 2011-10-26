@@ -36,7 +36,9 @@ class StubEventFactory : public EventFactoryInterface<StubEvent> {
 
 class StubBatchHandler : public EventHandlerInterface<StubEvent> {
  public:
-    virtual void OnEvent(StubEvent* event, const int64_t& sequence, bool end_of_batch) {
+    virtual void OnEvent(const int64_t& sequence,
+                         const bool& end_of_batch,
+                         StubEvent* event) {
         if (event)
             event->set_value(sequence);
     };
@@ -47,7 +49,7 @@ class StubBatchHandler : public EventHandlerInterface<StubEvent> {
 
 class StubEventTranslator : public EventTranslatorInterface<StubEvent> {
  public:
-    virtual StubEvent* TranslateTo(StubEvent* event, const int64_t& sequence) {
+    virtual StubEvent* TranslateTo(const int64_t& sequence, StubEvent* event) {
         event->set_value(sequence);
         return event;
     };
