@@ -65,8 +65,8 @@ class BatchEventProcessor : public EventProcessorInterface<T> {
 
                 while (next_sequence <= avalaible_sequence) {
                     event = ring_buffer_->Get(next_sequence);
-                    event_handler_->OnEvent(event, next_sequence,
-                            next_sequence == avalaible_sequence);
+                    event_handler_->OnEvent(next_sequence,
+                            next_sequence == avalaible_sequence, event);
                     next_sequence++;
                 }
 
