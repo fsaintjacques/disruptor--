@@ -26,7 +26,7 @@
 #ifndef DISRUPTOR_EVENT_PROCESSOR_H_ // NOLINT
 #define DISRUPTOR_EVENT_PROCESSOR_H_ // NOLINT
 
-#include <exception>
+#include <stdexcept>
 
 #include "disruptor/ring_buffer.h"
 
