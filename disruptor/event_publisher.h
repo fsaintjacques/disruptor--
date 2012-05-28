@@ -23,10 +23,10 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include "disruptor/ring_buffer.h"
-
 #ifndef DISRUPTOR_EVENT_PUBLISHER_H_ // NOLINT
 #define DISRUPTOR_EVENT_PUBLISHER_H_ // NOLINT
+
+#include "disruptor/ring_buffer.h"
 
 namespace disruptor {
 

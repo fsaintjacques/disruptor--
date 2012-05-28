@@ -23,13 +23,13 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#ifndef DISRUPTOR_CLAIM_STRATEGY_H_ // NOLINT
+#define DISRUPTOR_CLAIM_STRATEGY_H_ // NOLINT
+
 #include <thread>
 #include <vector>
 
 #include "disruptor/interface.h"
-
-#ifndef DISRUPTOR_CLAIM_STRATEGY_H_ // NOLINT
-#define DISRUPTOR_CLAIM_STRATEGY_H_ // NOLINT
 
 namespace disruptor {
 
@@ -86,7 +86,7 @@ class SingleThreadedStrategy :  public ClaimStrategyInterface {
  private:
     SingleThreadedStrategy();
 
-    void WaitForFreeSlotAt(const int64_t& sequence, 
+    void WaitForFreeSlotAt(const int64_t& sequence,
             const std::vector<Sequence*>& dependent_sequences) {
         int64_t wrap_point = sequence - buffer_size_;
         if (wrap_point > min_gating_sequence_.sequence()) {

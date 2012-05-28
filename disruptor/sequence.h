@@ -23,10 +23,6 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#include <atomic>
-
-#include "disruptor/utils.h"
-
 #ifndef CACHE_LINE_SIZE_IN_BYTES // NOLINT
 #define CACHE_LINE_SIZE_IN_BYTES 64 // NOLINT
 #endif // NOLINT
@@ -37,6 +33,10 @@
 
 #ifndef DISRUPTOR_SEQUENCE_H_ // NOLINT
 #define DISRUPTOR_SEQUENCE_H_ // NOLINT
+
+#include <atomic>
+
+#include "disruptor/utils.h"
 
 namespace disruptor {
 

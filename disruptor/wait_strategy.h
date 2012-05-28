@@ -23,6 +23,9 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#ifndef DISRUPTOR_WAITSTRATEGY_H_  // NOLINT
+#define DISRUPTOR_WAITSTRATEGY_H_  // NOLINT
+
 #include <sys/time.h>
 
 #include <chrono>
@@ -32,9 +35,6 @@
 #include "disruptor/exceptions.h"
 #include "disruptor/interface.h"
 #include "disruptor/sequence.h"
-
-#ifndef DISRUPTOR_WAITSTRATEGY_H_  // NOLINT
-#define DISRUPTOR_WAITSTRATEGY_H_  // NOLINT
 
 namespace disruptor {
 

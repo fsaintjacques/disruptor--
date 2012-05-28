@@ -23,6 +23,9 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 // SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
+#ifndef DISRUPTOR_RING_BUFFER_H_ // NOLINT
+#define DISRUPTOR_RING_BUFFER_H_ // NOLINT
+
 #include <array>
 #include <vector>
 
@@ -31,9 +34,6 @@
 #include "disruptor/wait_strategy.h"
 #include "disruptor/sequencer.h"
 #include "disruptor/sequence_barrier.h"
-
-#ifndef DISRUPTOR_RING_BUFFER_H_ // NOLINT
-#define DISRUPTOR_RING_BUFFER_H_ // NOLINT
 
 namespace disruptor {
 
