@@ -10,7 +10,16 @@ Makefile
 Makefile.in
 missing
 .deps
-*.o
+*.o     
+perf/*.o
+test/*.o
+AUTHORS
+COPYING
+ChangeLog
+INSTALL
+NEWS
+g++
+gcc
 
 # generated binaries
 perf/perf-*
