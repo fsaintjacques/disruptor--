@@ -1,5 +1,5 @@
 AC_INIT([disruptor], [0.1], [fsaintjacques@gmail.com])
-AC_CONFIG_SRCDIR([disruptor/claim_strategy.h])  
+AC_CONFIG_SRCDIR([disruptor/claim_strategy.h])
 
 # Checks for programs.
 AC_PROG_CXX
@@ -25,7 +25,7 @@ AC_CHECK_LIB(rt, [main])
 # Checks for library functions.
 AC_CHECK_FUNCS([gettimeofday])
 
-AM_CXXFLAGS="$AM_CXXFLAGS -D_GLIBCXX_USE_NANOSLEEP -D_GLIBCXX_USE_SCHED_YIELD -std=c++0x"
+AM_CXXFLAGS="$AM_CXXFLAGS -std=c++0x"
 AM_LDFLAGS="$AM_LDFLAGS -pthread"
 AC_SUBST([AM_CXXFLAGS])
 AC_SUBST([AM_LDFLAGS])

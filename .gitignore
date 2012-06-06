@@ -10,7 +10,7 @@ Makefile
 Makefile.in
 missing
 .deps
-*.o     
+*.o
 perf/*.o
 test/*.o
 AUTHORS
@@ -18,8 +18,9 @@ COPYING
 ChangeLog
 INSTALL
 NEWS
-g++
-gcc
+.DS_Store
+.cproject
+.project
 
 # generated binaries
 perf/perf-*
