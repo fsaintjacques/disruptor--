@@ -26,11 +26,10 @@
 #ifndef DISRUPTOR_UTILS_H_ // NOLINT
 #define DISRUPTOR_UTILS_H_ // NOLINT
 
-// From Google C++ Standard
-// A macro to disallow the copy constructor and operator= functions
-// This should be used in the private: declarations for a class
+// From Google C++ Standard, modified to use C++11 deleted functions.
+// A macro to disallow the copy constructor and operator= functions.
 #define DISALLOW_COPY_AND_ASSIGN(TypeName) \
-  TypeName(const TypeName&);               \
-  void operator=(const TypeName&)
+  TypeName(const TypeName&) = delete;      \
+  void operator=(const TypeName&) = delete
 
 #endif // DISRUPTOR_UTILS_H_ NOLINT
