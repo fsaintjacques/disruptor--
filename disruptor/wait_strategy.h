@@ -30,6 +30,8 @@
 
 #include <chrono>
 #include <thread>
+#include <mutex> // #include <thread> in g++-4.7 does not #include <mutex>
+#include <condition_variable> // #include <thread> in g++-4.7 does not #include <condition_variable>
 #include <vector>
 
 #include "disruptor/exceptions.h"
