@@ -3,4 +3,5 @@ disruptor--
 c++ implementation of LMAX's disruptor pattern.
 
 Your compiler needs to support C++0x standard in order to use this 
-implementation. Currently only tested with GCC 4.6.1 on Linux.
+implementation. Currently only tested with GCC 4.6.1 on Linux,
+and GCC 4.7.0 on Mac OS X 10.7

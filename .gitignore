@@ -11,6 +11,16 @@ Makefile.in
 missing
 .deps
 *.o
+perf/*.o
+test/*.o
+AUTHORS
+COPYING
+ChangeLog
+INSTALL
+NEWS
+.DS_Store
+.cproject
+.project
 
 # generated binaries
 perf/perf-*
