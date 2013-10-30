@@ -4,4 +4,3 @@
     -WorkerPool
     -Disruptor Wizard
     -MultiThreaded ClaimStrategy
--verify that RingBuffer::buffer_size is a power of 2

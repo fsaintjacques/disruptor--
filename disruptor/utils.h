@@ -26,10 +26,31 @@
 #ifndef DISRUPTOR_UTILS_H_ // NOLINT
 #define DISRUPTOR_UTILS_H_ // NOLINT
 
+#include <cstdint>
+
 // From Google C++ Standard, modified to use C++11 deleted functions.
 // A macro to disallow the copy constructor and operator= functions.
 #define DISALLOW_COPY_AND_ASSIGN(TypeName) \
   TypeName(const TypeName&) = delete;      \
   void operator=(const TypeName&) = delete
+
+namespace disruptor {
+
+/// \brief Returns the next power of 2 that is no less than the given n.
+///
+/// \param n the input
+uint64_t powerify(uint64_t n)
+{
+  --n;
+  n = n | (n >> 1);
+  n = n | (n >> 2);
+  n = n | (n >> 4);
+  n = n | (n >> 8);
+  n = n | (n >> 16);
+  n = n | (n >> 32);
+  return ++n;
+}
+
+}
 
 #endif // DISRUPTOR_UTILS_H_ NOLINT
