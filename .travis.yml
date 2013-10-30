@@ -4,6 +4,7 @@ compiler:
 
 before_install:
   - sudo apt-get install -qq premake
+  - premake --version
 
 install: true
 script: true
