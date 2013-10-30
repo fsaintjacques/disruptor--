@@ -1,0 +1,10 @@
+language: cpp
+compiler:
+  - gcc
+
+before_install:
+  - sudo apt-get -qq premake
+
+install: true
+script: true
+
