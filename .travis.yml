@@ -3,11 +3,13 @@ compiler:
   - gcc
 
 before_install:
-  - sudo apt-get install -qq premake
-  - premake --version
+  - wget http://sourceforge.net/projects/premake/files/Premake/4.4/premake-4.4-beta4-linux.tar.gz/download -O premake.tar.gz
+  - tar -xvzf premake.tar.gz
+  - pwd
 
 install:
-  - premake gmake
+  - pwd
+  - ./premake4 gmake
 
 script: true
 
