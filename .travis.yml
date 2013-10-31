@@ -8,9 +8,11 @@ before_install:
   - mkdir -p $HOME/bin
   - tar -xvzf premake.tar.gz
   - mv premake4 $HOME/bin
+  - $HOME/bin/premake4 --version
   - pwd
   - ls -l $HOME/bin
   - echo $PATH
+  - $HOME/bin/premake4 gmake
 
 install:
   - make -s -C build
