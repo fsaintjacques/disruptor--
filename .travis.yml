@@ -4,11 +4,13 @@ compiler:
 
 before_install:
   - wget http://sourceforge.net/projects/premake/files/Premake/4.4/premake-4.4-beta4-linux.tar.gz/download -O premake.tar.gz
+  - echo $HOME
+  - mkdir -p $HOME/bin
   - tar -xvzf premake.tar.gz
+  - mv premake4 $HOME/bin
   - pwd
-  - ls -l
-  - ./premake4 --version
-  - ./premake4 gmake
+  - ls -l $HOME/bin
+  - echo $PATH
 
 install:
   - make -s -C build
