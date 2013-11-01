@@ -3,18 +3,12 @@ compiler:
   - gcc
 
 before_install:
-  - wget http://sourceforge.net/projects/premake/files/Premake/4.4/premake-4.4-beta4-linux.tar.gz/download -O premake.tar.gz
-  - echo $HOME
-  - mkdir -p $HOME/bin
-  - tar -xvzf premake.tar.gz
-  - mv premake4 $HOME/bin
-  - $HOME/bin/premake4 --version
-  - pwd
-  - ls -l $HOME/bin
-  - echo $PATH
-  - $HOME/bin/premake4 gmake
+  - sudo add-apt-repository ppa:codegear/release
+  - sudo apt-get update
+  - sudo apt-get install premake4
 
 install:
+  - premake4 gmake
   - make -s -C build
 
 script: true
