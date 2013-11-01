@@ -3,7 +3,7 @@ compiler:
   - gcc
 
 before_install:
-  - sudo add-apt-repository ppa:codegear/release
+  - sudo add-apt-repository --yes ppa:codegear/release
   - sudo apt-get update
   - sudo apt-get install premake4
 
