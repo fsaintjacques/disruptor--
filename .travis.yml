@@ -8,11 +8,11 @@ before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -qq premake4
   - sudo apt-get install -qq g++-4.7
-  - g++ --version
 
 install:
+  - which g++-4.7
   - premake4 gmake
-  - make -s -C build
+  - make -s -C build CXX='g++-4.7' CC='gcc-4.7'
 
 script: true
 
