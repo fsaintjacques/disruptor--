@@ -8,6 +8,7 @@ before_install:
   - sudo apt-get update -qq
   - sudo apt-get install -qq premake4
   - sudo apt-get install -qq g++-4.7
+  - sudo apt-get install -qq boost-dev
 
 install:
   - which g++-4.7
