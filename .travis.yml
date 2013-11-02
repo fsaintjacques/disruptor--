@@ -12,7 +12,6 @@ install:
   - sudo apt-get install -qq g++-4.8
   - sudo apt-get install -qq libboost-all-dev
   - sudo pip install cpp-coveralls --use-mirrors
-  - which coveralls
 
 before_script:
   - premake4 gmake
@@ -24,6 +23,5 @@ script:
   - cd -
 
 after_success:
-  - find . -name *.gcda
   - coveralls --gcov 'gcov-4.8' -r . -b build/ -e test -e perf
 
