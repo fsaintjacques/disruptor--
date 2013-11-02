@@ -12,12 +12,9 @@ install:
   - sudo apt-get install -qq g++-4.8
   - sudo apt-get install -qq libboost-all-dev
 
-env:
-  - CXX=g++-4.8 CC=gcc-4.8
-
 before_script:
   - premake4 gmake
-  - make -s -C build
+  - make -s -C build CC='gcc-4.8' CXX='g++-4.8'
 
 script: true
 
