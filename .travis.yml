@@ -2,8 +2,7 @@ language: cpp
 compiler:
   - gcc
 env:
-  - CXX=g++-4.8
-  - CC=gcc-4.8
+  - CXX=g++-4.8 CC=gcc-4.8
 
 before_install:
   - sudo add-apt-repository --yes ppa:codegear/release
