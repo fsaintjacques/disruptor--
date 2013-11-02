@@ -6,19 +6,24 @@ before_install:
   - sudo add-apt-repository --yes ppa:codegear/release
   - sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test
   - sudo apt-get update -qq
-  - git://github.com/eddyxu/cpp-coveralls.git
 
 install:
   - sudo apt-get install -qq premake4
   - sudo apt-get install -qq g++-4.8
   - sudo apt-get install -qq libboost-all-dev
-  - pwd
+  - sudo pip install cpp-coveralls --use-mirrors
+  - which coveralls
 
 before_script:
   - premake4 gmake
   - make -s -C build CC='gcc-4.8' CXX='g++-4.8' config=debug
+  - make -s -C build CC='gcc-4.8' CXX='g++-4.8' config=profile
 
 script:
   - cd build/bin/debug
   - ./sequencer_test && ./ring_buffer_test
+  - cd -
+
+after_success:
+  - coveralls --help
 
