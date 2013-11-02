@@ -25,5 +25,5 @@ script:
   - cd -
 
 after_success:
-  - coveralls -r . -b build/ -e test -e perf
+  - coveralls --gcov 'gcov-4.8' -r . -b build/ -e test -e perf
 
