@@ -6,11 +6,13 @@ before_install:
   - sudo add-apt-repository --yes ppa:codegear/release
   - sudo add-apt-repository --yes ppa:ubuntu-toolchain-r/test
   - sudo apt-get update -qq
+  - git://github.com/eddyxu/cpp-coveralls.git
 
 install:
   - sudo apt-get install -qq premake4
   - sudo apt-get install -qq g++-4.8
   - sudo apt-get install -qq libboost-all-dev
+  - pwd
 
 before_script:
   - premake4 gmake
