@@ -14,7 +14,9 @@ install:
 
 before_script:
   - premake4 gmake
-  - make -s -C build CC='gcc-4.8' CXX='g++-4.8'
+  - make -s -C build CC='gcc-4.8' CXX='g++-4.8' config=debug
 
-script: true
+script:
+  - cd build/bin/debug
+  - sequencer_test && ring_buffer_test
 
