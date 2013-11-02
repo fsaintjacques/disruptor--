@@ -18,5 +18,5 @@ before_script:
 
 script:
   - cd build/bin/debug
-  - sequencer_test && ring_buffer_test
+  - ./sequencer_test && ./ring_buffer_test
 
