@@ -25,5 +25,6 @@ script:
   - cd -
 
 after_success:
+  - find . -name *.gcda
   - coveralls --gcov 'gcov-4.8' -r . -b build/ -e test -e perf
 
