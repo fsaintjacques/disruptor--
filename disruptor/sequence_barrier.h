@@ -34,7 +34,7 @@
 
 namespace disruptor {
 
-class ProcessingSequenceBarrier : SequenceBarrierInterface {
+class ProcessingSequenceBarrier : public SequenceBarrierInterface {
  public:
     ProcessingSequenceBarrier(WaitStrategyInterface* wait_strategy,
                               Sequence* sequence,

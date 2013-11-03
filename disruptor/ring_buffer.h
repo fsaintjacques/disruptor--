@@ -34,6 +34,7 @@
 #include "disruptor/wait_strategy.h"
 #include "disruptor/sequencer.h"
 #include "disruptor/sequence_barrier.h"
+#include "disruptor/utils.h"
 
 namespace disruptor {
 
@@ -54,13 +55,13 @@ class RingBuffer : public Sequencer {
     // @param wait_strategy_option waiting strategy employed by
     // processors_to_track waiting in entries becoming available.
     RingBuffer(EventFactoryInterface<T>* event_factory,
-               int buffer_size,
+               uint64_t buffer_size,
                ClaimStrategyOption claim_strategy_option,
                WaitStrategyOption wait_strategy_option) :
             Sequencer(buffer_size,
                       claim_strategy_option,
                       wait_strategy_option),
-            buffer_size_(buffer_size),
+            buffer_size_(powerify(buffer_size)),
             mask_(buffer_size - 1),
             events_(event_factory->NewInstance(buffer_size)) {
     }
@@ -79,8 +80,8 @@ class RingBuffer : public Sequencer {
 
  private:
     // Members
-    int buffer_size_;
-    int mask_;
+    uint64_t buffer_size_;
+    uint64_t mask_;
     T* events_;
 
     DISALLOW_COPY_AND_ASSIGN(RingBuffer);

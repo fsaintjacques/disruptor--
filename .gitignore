@@ -1,17 +1,2 @@
-# autotools stuff
-aclocal.m4
-autom4te.cache
-configure
-config.log
-config.status
-depcomp
-install-sh
-Makefile
-Makefile.in
-missing
-.deps
-*.o
-
 # generated binaries
-perf/perf-*
-test/*_test
+build
