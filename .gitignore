@@ -17,3 +17,5 @@ test-driver
 # generated binaries
 perf/perf-*
 test/*_test
+build/*
+
