@@ -11,6 +11,8 @@ Makefile.in
 missing
 .deps
 *.o
+compile
+test-driver
 
 # generated binaries
 perf/perf-*
