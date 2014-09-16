@@ -27,6 +27,8 @@
 #define DISRUPTOR_RING_BUFFER_H_ // NOLINT
 
 #include <array>
+#include <condition_variable>
+#include <mutex>
 #include <vector>
 
 #include "disruptor/interface.h"

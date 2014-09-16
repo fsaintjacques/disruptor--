@@ -26,6 +26,8 @@
 #ifndef DISRUPTOR_SEQUENCER_H_ // NOLINT
 #define DISRUPTOR_SEQUENCER_H_ // NOLINT
 
+#include <condition_variable>
+#include <mutex>
 #include <vector>
 
 #include "disruptor/batch_descriptor.h"
