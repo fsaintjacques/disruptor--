@@ -29,17 +29,6 @@ matrix:
             - ubuntu-toolchain-r-test
             - llvm-toolchain-precise-3.6
 
-    - env: COMPILER=gcc GCC_VERSION=4.7
-      addons: &gcc47
-        apt:
-          packages:
-            - gcc-4.7
-            - g++-4.7
-            - valgrind
-            - libboost-all-dev
-          sources:
-            - ubuntu-toolchain-r-test
-
 before_script:
   ############################################################################
   # Setup the build directory
