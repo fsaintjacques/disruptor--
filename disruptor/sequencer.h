@@ -55,11 +55,6 @@ class Sequencer {
                                                 buffer_size_)),
             wait_strategy_(CreateWaitStrategy(wait_strategy_option)) { }
 
-    ~Sequencer() {
-        delete claim_strategy_;
-        delete wait_strategy_;
-    }
-
     // Set the sequences that will gate publishers to prevent the buffer
     // wrapping.
     //
