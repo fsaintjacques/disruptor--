@@ -6,11 +6,12 @@ compiler:
   - gcc
 os: linux
 sudo: false
+
 addons:
   apt:
     packages:
-      - valgrind
-      - libboost-all-dev
+    - valgrind
+    - libboost-all-dev
 
 before_script:
   ############################################################################

@@ -26,7 +26,7 @@
 cmake_minimum_required(VERSION 2.8.0)
 project(disruptor CXX)
 
-find_package(Boost 1.49.0 COMPONENTS unit_test_framework REQUIRED)
+find_package(Boost 1.46.0 COMPONENTS unit_test_framework REQUIRED)
 include_directories(${Boost_INCLUDE_DIR})
 
 list(APPEND CMAKE_CXX_FLAGS "-std=c++11 ${CMAKE_CXX_FLAGS} -g -pthread")
