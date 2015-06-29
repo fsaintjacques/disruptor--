@@ -1,4 +1,4 @@
-// Copyright (c) 2011, François Saint-Jacques
+// Copyright (c) 2011-2015, François Saint-Jacques
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -54,11 +54,6 @@ class Sequencer {
             claim_strategy_(CreateClaimStrategy(claim_strategy_option,
                                                 buffer_size_)),
             wait_strategy_(CreateWaitStrategy(wait_strategy_option)) { }
-
-    ~Sequencer() {
-        delete claim_strategy_;
-        delete wait_strategy_;
-    }
 
     // Set the sequences that will gate publishers to prevent the buffer
     // wrapping.
