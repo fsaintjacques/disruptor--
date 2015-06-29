@@ -6,7 +6,7 @@ sudo: false
 
 matrix:
   include:
-  - env: CLANG_VERSION=3.5
+    - env: CLANG_VERSION=3.5
       addons: &clang35
         apt:
           packages:
@@ -16,7 +16,6 @@ matrix:
           sources:
             - ubuntu-toolchain-r-test
             - llvm-toolchain-precise-3.5
-
 
 before_script:
   ############################################################################
