@@ -6,42 +6,30 @@ os: linux
 sudo: false
 
 matrix:
-  allow_failures:
-    - env: CLANG_VERSION=3.7
-
   include:
     # clang 3.5
-    - env: CLANG_VERSION=3.5 UNIT_TESTS=true
+    - env: CLANG_VERSION=3.5
       addons: &clang35
         apt:
           packages:
             - clang-3.5
             - valgrind
+            - libboost-dev
           sources:
             - ubuntu-toolchain-r-test
             - llvm-toolchain-precise-3.5
 
     # clang 3.6
-    - env: CLANG_VERSION=3.6 UNIT_TESTS=true
+    - env: CLANG_VERSION=3.6
       addons: &clang36
         apt:
           packages:
             - clang-3.6
             - valgrind
+            - libboost-dev
           sources:
             - ubuntu-toolchain-r-test
             - llvm-toolchain-precise-3.6
-
-    # clang 3.7 (trunk)
-    - env: CLANG_VERSION=3.7 UNIT_TESTS=true
-      addons: &clang37
-        apt:
-          packages:
-            - clang-3.7
-            - valgrind
-          sources:
-            - ubuntu-toolchain-r-test
-            - llvm-toolchain-precise # latest
 
 install:
   ############################################################################
@@ -51,34 +39,14 @@ install:
   - mkdir ${DEPS_DIR} && cd ${DEPS_DIR}
 
   ############################################################################
-  # Install Boost headers
-  ############################################################################
-  - BOOST_URL="http://sourceforge.net/projects/boost/files/boost/1.57.0/boost_1_57_0.tar.gz"
-  - mkdir boost && travis_retry wget --quiet -O - ${BOOST_URL} | tar --strip-components=1 -xz -C boost
-
-  ############################################################################
-  # Install a recent CMake
-  ############################################################################
-  - CMAKE_URL=http://www.cmake.org/files/v3.2/cmake-3.2.1-Linux-x86_64.tar.gz
-  - mkdir cmake
-  - travis_retry wget --quiet -O - ${CMAKE_URL} | tar --strip-components=1 -xz -C cmake
-  - export PATH=${PWD}/cmake/bin:${PATH}
-
-  ############################################################################
   # Install libc++ and libc++abi
   # Note: We install libc++[abi] 3.6 even with Clang 3.5, because the 3.5
   #       version does not seem to provide <ciso646>, which we require.
   ############################################################################
-  - if [[ "${CLANG_VERSION}" =~ 3\.[56] ]]; then LLVM_URL="http://llvm.org/releases/3.6.1/llvm-3.6.1.src.tar.xz"; fi
-  - if [[ "${CLANG_VERSION}" =~ 3\.[56] ]]; then LIBCXX_URL="http://llvm.org/releases/3.6.1/libcxx-3.6.1.src.tar.xz"; fi
-  - if [[ "${CLANG_VERSION}" =~ 3\.[56] ]]; then LIBCXXABI_URL="http://llvm.org/releases/3.6.1/libcxxabi-3.6.1.src.tar.xz"; fi
-  - if [[ "${CLANG_VERSION}" =~ 3\.[56] ]]; then TAR_FMT="-xJ"; fi
-
-  - if [[ "${CLANG_VERSION}" == "3.7" ]]; then LLVM_URL="https://github.com/llvm-mirror/llvm/archive/master.tar.gz"; fi
-  - if [[ "${CLANG_VERSION}" == "3.7" ]]; then LIBCXX_URL="https://github.com/llvm-mirror/libcxx/archive/master.tar.gz"; fi
-  - if [[ "${CLANG_VERSION}" == "3.7" ]]; then LIBCXXABI_URL="https://github.com/llvm-mirror/libcxxabi/archive/master.tar.gz"; fi
-  - if [[ "${CLANG_VERSION}" == "3.7" ]]; then TAR_FMT="-xz"; fi
-
+  - LLVM_URL="http://llvm.org/releases/3.6.1/llvm-3.6.1.src.tar.xz"
+  - LIBCXX_URL="http://llvm.org/releases/3.6.1/libcxx-3.6.1.src.tar.xz"
+  - LIBCXXABI_URL="http://llvm.org/releases/3.6.1/libcxxabi-3.6.1.src.tar.xz"
+  - TAR_FMT="-xJ"
   - mkdir -p llvm llvm/build llvm/projects/libcxx llvm/projects/libcxxabi
   - travis_retry wget --quiet -O - ${LLVM_URL} | tar --strip-components=1 ${TAR_FMT} -C llvm
   - travis_retry wget --quiet -O - ${LIBCXX_URL} | tar --strip-components=1 ${TAR_FMT} -C llvm/projects/libcxx
