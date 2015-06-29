@@ -23,4 +23,4 @@ before_script:
 
 script:
   - export CTEST_PARALLEL_LEVEL=2
-  - make test -k -j3
+  - make && make test -k -j3
