@@ -6,7 +6,7 @@ sudo: false
 
 matrix:
   include:
-    - env: CLANG_VERSION=3.5
+    - env: CLANG_VERSION=3.5 CXX=clang++-3.5
       addons: &clang35
         apt:
           packages:
@@ -16,14 +16,25 @@ matrix:
           sources:
             - ubuntu-toolchain-r-test
             - llvm-toolchain-precise-3.5
+    - env: CLANG_VERSION=3.6 CXX=clang++-3.6
+      addons: &clang36
+        apt:
+          packages:
+            - clang-3.6
+            - valgrind
+            - libboost-all-dev
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-precise-3.6
 
 before_script:
   ############################################################################
   # Setup the build directory
   ############################################################################
+  - $CXX --version
   - mkdir build
   - cd build
-  - cmake -DCMAKE_CXX_COMPILER=clang++-${CLANG_VERSION} ..
+  - cmake -DCMAKE_CXX_COMPILER=${CXX} ..
 
 script:
   - export CTEST_PARALLEL_LEVEL=2
