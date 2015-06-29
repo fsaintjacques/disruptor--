@@ -34,6 +34,7 @@ matrix:
         apt:
           packages:
             - gcc-4.7
+            - g++-4.7
             - valgrind
             - libboost-all-dev
           sources:
