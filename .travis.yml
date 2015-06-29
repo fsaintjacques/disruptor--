@@ -1,17 +1,22 @@
 # taken from https://github.com/ldionne/hana/blob/master/.travis.yml
 
 language: c++
-compiler:
-  - clang
-  - gcc
 os: linux
 sudo: false
 
-addons:
-  apt:
-    packages:
-    - valgrind
-    - libboost-all-dev
+matrix:
+  include:
+  - env: CLANG_VERSION=3.5
+      addons: &clang35
+        apt:
+          packages:
+            - clang-3.5
+            - valgrind
+            - libboost-all-dev
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-precise-3.5
+
 
 before_script:
   ############################################################################
@@ -19,7 +24,7 @@ before_script:
   ############################################################################
   - mkdir build
   - cd build
-  - cmake ..
+  - cmake -DCMAKE_CXX_COMPILER=clang++-${CLANG_VERSION} ..
 
 script:
   - export CTEST_PARALLEL_LEVEL=2
