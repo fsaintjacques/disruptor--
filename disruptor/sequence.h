@@ -44,6 +44,7 @@ namespace disruptor {
 constexpr int64_t kInitialCursorValue = -1L;
 constexpr int64_t kAlertedSignal = -2L;
 constexpr int64_t kTimeoutSignal = -3L;
+constexpr int64_t kFirstSequenceValue = kInitialCursorValue + 1L;
 
 // Sequence counter.
 class Sequence {

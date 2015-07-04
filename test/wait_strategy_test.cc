@@ -33,8 +33,6 @@
 namespace disruptor {
 namespace test {
 
-const int64_t kFirstSequenceValue = kInitialCursorValue + 1L;
-
 template <typename W>
 struct StrategyFixture {
   StrategyFixture() : alerted(false) {}
