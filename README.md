@@ -1,4 +1,4 @@
-disruptor-- [![Build Status](https://travis-ci.org/fsaintjacques/disruptor--.svg?branch=develop)](https://travis-ci.org/fsaintjacques/disruptor--)
+disruptor-- [![Build Status](https://travis-ci.org/fsaintjacques/disruptor--.svg?branch=feature%2Fapi-refactor)](https://travis-ci.org/fsaintjacques/disruptor--) [![Coverage Status](https://coveralls.io/repos/fsaintjacques/disruptor--/badge.svg?branch=feature%2Fapi-refactor)](https://coveralls.io/r/fsaintjacques/disruptor--?branch=feature%2Fapi-refactor)
 
 c++ implementation of LMAX's disruptor pattern.
 
