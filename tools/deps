@@ -32,5 +32,4 @@ function fetch_cmake {
 }
 
 fetch_cmake
-set_travis_compiler
 mkdir -p build
