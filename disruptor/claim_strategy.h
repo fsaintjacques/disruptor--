@@ -28,9 +28,8 @@
 #define DISRUPTOR_CLAIM_STRATEGY_H_  // NOLINT
 
 #include <thread>
-#include <vector>
 
-#include "disruptor/interface.h"
+#include "disruptor/sequence.h"
 
 namespace disruptor {
 

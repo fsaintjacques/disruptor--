@@ -85,6 +85,17 @@ BOOST_AUTO_TEST_CASE(SignalTimeoutWaitingOnCursor) {
 
   waiter.join();
   BOOST_CHECK_EQUAL(return_value.load(), kTimeoutSignal);
+
+  std::thread waiter2([this, &return_value]() {
+    return_value.store(strategy.WaitFor(kFirstSequenceValue, cursor, dependents,
+                                        alerted,
+                                        std::chrono::seconds(1L)));
+  });
+
+  cursor.IncrementAndGet(1L);
+  strategy.SignalAllWhenBlocking();
+  waiter2.join();
+  BOOST_CHECK_EQUAL(return_value.load(), kFirstSequenceValue);
 }
 
 BOOST_AUTO_TEST_CASE(WaitForDependents) {
@@ -170,6 +181,17 @@ BOOST_AUTO_TEST_CASE(SignalTimeoutWaitingOnCursor) {
 
   waiter.join();
   BOOST_CHECK_EQUAL(return_value.load(), kTimeoutSignal);
+
+  std::thread waiter2([this, &return_value]() {
+    return_value.store(strategy.WaitFor(kFirstSequenceValue, cursor, dependents,
+                                        alerted,
+                                        std::chrono::seconds(1L)));
+  });
+
+  cursor.IncrementAndGet(1L);
+  strategy.SignalAllWhenBlocking();
+  waiter2.join();
+  BOOST_CHECK_EQUAL(return_value.load(), kFirstSequenceValue);
 }
 
 BOOST_AUTO_TEST_CASE(WaitForDependents) {
@@ -255,6 +277,17 @@ BOOST_AUTO_TEST_CASE(SignalTimeoutWaitingOnCursor) {
 
   waiter.join();
   BOOST_CHECK_EQUAL(return_value.load(), kTimeoutSignal);
+
+  std::thread waiter2([this, &return_value]() {
+    return_value.store(strategy.WaitFor(kFirstSequenceValue, cursor, dependents,
+                                        alerted,
+                                        std::chrono::seconds(1L)));
+  });
+
+  cursor.IncrementAndGet(1L);
+  strategy.SignalAllWhenBlocking();
+  waiter2.join();
+  BOOST_CHECK_EQUAL(return_value.load(), kFirstSequenceValue);
 }
 
 BOOST_AUTO_TEST_CASE(WaitForDependents) {
@@ -360,6 +393,17 @@ BOOST_AUTO_TEST_CASE(SignalTimeoutWaitingOnCursor) {
 
   waiter.join();
   BOOST_CHECK_EQUAL(return_value.load(), kTimeoutSignal);
+
+  std::thread waiter2([this, &return_value]() {
+    return_value.store(strategy.WaitFor(kFirstSequenceValue, cursor, dependents,
+                                        alerted,
+                                        std::chrono::seconds(1L)));
+  });
+
+  cursor.IncrementAndGet(1L);
+  strategy.SignalAllWhenBlocking();
+  waiter2.join();
+  BOOST_CHECK_EQUAL(return_value.load(), kFirstSequenceValue);
 }
 
 BOOST_AUTO_TEST_CASE(WaitForDependents) {
