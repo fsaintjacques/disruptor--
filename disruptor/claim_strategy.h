@@ -30,14 +30,17 @@
 #include <thread>
 
 #include "disruptor/sequence.h"
+#include "disruptor/ring_buffer.h"
 
 namespace disruptor {
 
-enum ClaimStrategyOption { kSingleThreadedStrategy, kMultiThreadedStrategy };
+template <size_t N>
+class SingleThreadedStrategy;
+using kDefaultClaimStrategy = SingleThreadedStrategy<kDefaultRingBufferSize>;
 
 // Optimised strategy can be used when there is a single publisher thread
 // claiming {@link AbstractEvent}s.
-template <size_t N>
+template <size_t N = kDefaultRingBufferSize>
 class SingleThreadedStrategy {
  public:
   SingleThreadedStrategy() {}
