@@ -27,5 +27,8 @@ matrix:
             - ubuntu-toolchain-r-test
             - llvm-toolchain-precise-3.6
 
-install: tools/deps
-script:  tools/test
+install:
+  -${TRAVIS_BUILD_DIR}/tools/deps
+script:
+  - ${TRAVIS_BUILD_DIR}/tools/build
+  - ${TRAVIS_BUILD_DIR}/tools/test
