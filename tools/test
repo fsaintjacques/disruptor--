@@ -21,7 +21,7 @@ function prepare_build_dir {
   fi
 
   cd build
-  cmake -DCOVERALLS=ON -DCMAKE_BUILD_TYPE=Debug ..
+  cmake -DCOVERALLS=ON -DCOVERALLS_UPLOAD=ON -DCMAKE_BUILD_TYPE=Debug ..
 }
 
 set_travis_compiler

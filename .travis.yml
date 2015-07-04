@@ -31,3 +31,5 @@ install:
   - cd ${TRAVIS_BUILD_DIR} && tools/deps
 script:
   - cd ${TRAVIS_BUILD_DIR} && tools/test
+after_success:
+  - cd ${TRAVIS_BUILD_DIR} && tools/coverage
