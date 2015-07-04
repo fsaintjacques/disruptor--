@@ -49,7 +49,8 @@ if (COVERALLS)
   set(COVERAGE_SRCS ${PROJECT_SOURCE_DIR}/disruptor/ring_buffer.h
                     ${PROJECT_SOURCE_DIR}/disruptor/wait_strategy.h
                     ${PROJECT_SOURCE_DIR}/disruptor/claim_strategy.h
-                    ${PROJECT_SOURCE_DIR}/disruptor/sequence_barrier.h)
+                    ${PROJECT_SOURCE_DIR}/disruptor/sequence_barrier.h
+                    ${PROJECT_SOURCE_DIR}/disruptor/sequencer.h)
   include(Coveralls)
   coveralls_turn_on_coverage()
   coveralls_setup(
@@ -76,3 +77,7 @@ add_test(sequence_barrier_test sequence_barrier_test_bin)
 add_executable(claim_strategy_test_bin test/claim_strategy_test.cc)
 target_link_libraries(claim_strategy_test_bin ${Boost_LIBRARIES})
 add_test(claim_strategy_test claim_strategy_test_bin)
+
+add_executable(sequencer_test_bin test/sequencer_test.cc)
+target_link_libraries(sequencer_test_bin ${Boost_LIBRARIES})
+add_test(sequencer_test sequencer_test_bin)

@@ -33,16 +33,16 @@
 
 #include "disruptor/batch_descriptor.h"
 #include "disruptor/claim_strategy.h"
-#include "disruptor/interface.h"
-#include "disruptor/sequence_barrier.h"
 #include "disruptor/wait_strategy.h"
+#include "disruptor/sequence_barrier.h"
 
 namespace disruptor {
 
 // Coordinator for claiming sequences for access to a data structures while
 // tracking dependent {@link Sequence}s
 template <typename T, size_t N = kDefaultRingBufferSize,
-          typename W = kDefaultWaitStrategy>
+          typename C = kDefaultClaimStrategy,
+          typename W = kDefaultWaitStrategy >
 class Sequencer {
  public:
   // Construct a Sequencer with the selected strategies.
@@ -50,9 +50,7 @@ class Sequencer {
   // @param buffer_size over which sequences are valid.
   // @param claim_strategy_option for those claiming sequences.
   // @param wait_strategy_option for those waiting on sequences.
-  Sequencer(std::array<T, N> events, ClaimStrategyOption claim_strategy_option)
-      : ring_buffer_(events),
-        claim_strategy_(CreateClaimStrategy(claim_strategy_option, N)) {}
+  Sequencer(std::array<T, N> events) : ring_buffer_(events) {}
 
   // Set the sequences that will gate publishers to prevent the buffer
   // wrapping.
@@ -67,10 +65,8 @@ class Sequencer {
   //
   // @param sequences_to_track this barrier will track.
   // @return the barrier gated as required.
-  ProcessingSequenceBarrier* NewBarrier(
-      const std::vector<Sequence*>& sequences_to_track) {
-    return new ProcessingSequenceBarrier(wait_strategy_, &cursor_,
-                                         sequences_to_track);
+  SequenceBarrier<W> NewBarrier(const std::vector<Sequence*>& dependents) {
+    return SequenceBarrier<W>(cursor_, dependents);
   }
 
   // Create a new {@link BatchDescriptor} that is the minimum of the
@@ -78,8 +74,8 @@ class Sequencer {
   //
   // @param size for the new batch.
   // @return the new {@link BatchDescriptor}.
-  BatchDescriptor* NewBatchDescriptor(const int& size) {
-    return new BatchDescriptor(size < N ? size : N);
+  BatchDescriptor NewBatchDescriptor(const int& size) {
+    return BatchDescriptor(size < N ? size : N);
   }
 
   // Get the value of the cursor indicating the published sequence.
@@ -93,13 +89,13 @@ class Sequencer {
   //
   // @return true if the buffer has the capacity to allocated another event.
   bool HasAvalaibleCapacity() {
-    return claim_strategy_->HasAvalaibleCapacity(gating_sequences_);
+    return claim_strategy_.HasAvalaibleCapacity(gating_sequences_);
   }
 
   // Claim the next event in sequence for publishing to the {@link RingBuffer}.
   //
   // @return the claimed sequence.
-  int64_t Next() { return claim_strategy_->IncrementAndGet(gating_sequences_); }
+  int64_t Next() { return claim_strategy_.IncrementAndGet(gating_sequences_); }
 
   // Claim the next batch of sequence numbers for publishing.
   //
@@ -117,7 +113,7 @@ class Sequencer {
   // @param sequence to be claimed.
   // @return sequence just claimed.
   int64_t Claim(const int64_t& sequence) {
-    claim_strategy_->SetSequence(sequence, gating_sequences_);
+    claim_strategy_.SetSequence(sequence, gating_sequences_);
     return sequence;
   }
 
@@ -148,7 +144,7 @@ class Sequencer {
  private:
   // Helpers
   void Publish(const int64_t& sequence, const int64_t& batch_size) {
-    claim_strategy_->SerialisePublishing(sequence, cursor_, batch_size);
+    claim_strategy_.SerialisePublishing(sequence, cursor_, batch_size);
     cursor_.set_sequence(sequence);
     wait_strategy_.SignalAllWhenBlocking();
   }
@@ -159,7 +155,7 @@ class Sequencer {
   PaddedSequence cursor_;
   std::vector<Sequence*> gating_sequences_;
 
-  ClaimStrategyInterface* claim_strategy_;
+  C claim_strategy_;
   W wait_strategy_;
 
   DISALLOW_COPY_MOVE_AND_ASSIGN(Sequencer);
