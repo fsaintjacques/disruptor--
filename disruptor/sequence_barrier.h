@@ -43,15 +43,14 @@ class SequenceBarrier {
       : cursor_(cursor), dependents_(dependents), alerted_(false) {}
 
   int64_t WaitFor(const int64_t& sequence) {
-    return wait_strategy_.WaitFor(sequence, cursor_, dependents_,
-                                  alerted_);
+    return wait_strategy_.WaitFor(sequence, cursor_, dependents_, alerted_);
   }
 
   template <class R, class P>
   int64_t WaitFor(const int64_t& sequence,
                   const std::chrono::duration<R, P>& timeout) {
-    return wait_strategy_.WaitFor(sequence, cursor_, dependents_,
-                                  alerted_, timeout);
+    return wait_strategy_.WaitFor(sequence, cursor_, dependents_, alerted_,
+                                  timeout);
   }
 
   int64_t get_sequence() const { return cursor_.sequence(); }

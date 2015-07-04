@@ -63,26 +63,20 @@ BOOST_AUTO_TEST_CASE(WaitForCursor) {
   std::atomic<int64_t> return_value(kInitialCursorValue);
 
   std::thread waiter([this, &return_value]() {
-    return_value.store(
-        barrier.WaitFor(kFirstSequenceValue));
+    return_value.store(barrier.WaitFor(kFirstSequenceValue));
   });
 
   BOOST_CHECK_EQUAL(return_value.load(), kInitialCursorValue);
-  std::thread([this]() {
-    cursor.IncrementAndGet(1L);
-  }).join();
+  std::thread([this]() { cursor.IncrementAndGet(1L); }).join();
   waiter.join();
   BOOST_CHECK_EQUAL(return_value.load(), kFirstSequenceValue);
 
   std::thread waiter2([this, &return_value]() {
-    return_value.store(
-        barrier.WaitFor(kFirstSequenceValue + 1L,
-                        std::chrono::milliseconds(10)));
+    return_value.store(barrier.WaitFor(kFirstSequenceValue + 1L,
+                                       std::chrono::milliseconds(10)));
   });
 
-  std::thread([this]() {
-    cursor.IncrementAndGet(1L);
-  }).join();
+  std::thread([this]() { cursor.IncrementAndGet(1L); }).join();
 
   waiter2.join();
   BOOST_CHECK_EQUAL(return_value.load(), kFirstSequenceValue + 1L);

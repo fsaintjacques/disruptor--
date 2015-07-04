@@ -40,7 +40,7 @@ namespace disruptor {
 namespace test {
 
 struct SequencerFixture {
-  SequencerFixture() : events({1L,2L,3L,4L}), sequencer(events) {};
+  SequencerFixture() : events({1L, 2L, 3L, 4L}), sequencer(events){};
 
   void FillBuffer() {
     for (int i = 0; i < RING_BUFFER_SIZE; i++) {
@@ -49,7 +49,8 @@ struct SequencerFixture {
     }
   }
 
-  Sequencer<long, RING_BUFFER_SIZE, SingleThreadedStrategy<RING_BUFFER_SIZE>, kDefaultWaitStrategy> sequencer;
+  Sequencer<long, RING_BUFFER_SIZE, SingleThreadedStrategy<RING_BUFFER_SIZE>,
+            kDefaultWaitStrategy> sequencer;
   std::array<long, RING_BUFFER_SIZE> events;
 };
 

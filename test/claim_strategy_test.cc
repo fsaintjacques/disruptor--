@@ -89,7 +89,6 @@ BOOST_FIXTURE_TEST_CASE(HasAvalaibleCapacity, SingleThreadedStrategyFixture) {
   // all equals
   BOOST_CHECK_EQUAL(strategy.IncrementAndGet(RING_BUFFER_SIZE, one_dependents),
                     sequence_1.IncrementAndGet(RING_BUFFER_SIZE));
-
 }
 
 BOOST_FIXTURE_TEST_CASE(SetSequence, SingleThreadedStrategyFixture) {
