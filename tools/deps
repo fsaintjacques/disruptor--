@@ -32,9 +32,9 @@ function fetch_cmake {
 }
 
 function set_travis_compiler {
-  if [[ $COMPILER = clang ]] ; then
+  if [[ ${COMPILER:-} = clang ]] ; then
     export CXX="clang++-${CLANG_VERSION}" ;
-  elif [[ $COMPILER = gcc ]] ; then
+  elif [[ ${COMPILER:-} = gcc ]] ; then
     export CXX="g++-${GCC_VERSION}" ;
   fi
 }
