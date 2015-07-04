@@ -31,14 +31,6 @@ function fetch_cmake {
   export PATH=${PWD}/cmake/bin:${PATH}
 }
 
-function set_travis_compiler {
-  if [[ ${COMPILER:-} = clang ]] ; then
-    export CXX="clang++-${CLANG_VERSION}" ;
-  elif [[ ${COMPILER:-} = gcc ]] ; then
-    export CXX="g++-${GCC_VERSION}" ;
-  fi
-}
-
 fetch_cmake
 set_travis_compiler
 mkdir -p build

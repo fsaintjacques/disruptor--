@@ -4,6 +4,14 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
+function set_travis_compiler {
+  if [[ ${COMPILER:-} = clang ]] ; then
+    export CXX="clang++-${CLANG_VERSION}" ;
+  elif [[ ${COMPILER:-} = gcc ]] ; then
+    export CXX="g++-${GCC_VERSION}" ;
+  fi
+}
+
 function prepare_build_dir {
   mkdir -p build
 
@@ -16,5 +24,6 @@ function prepare_build_dir {
   cmake -DCOVERALLS=ON -DCMAKE_BUILD_TYPE=Debug ..
 }
 
+set_travis_compiler
 prepare_build_dir
 make all test
