@@ -48,7 +48,8 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/tools/coveralls
 if (COVERALLS)
   set(COVERAGE_SRCS ${PROJECT_SOURCE_DIR}/disruptor/ring_buffer.h
                     ${PROJECT_SOURCE_DIR}/disruptor/wait_strategy.h
-                    ${PROJECT_SOURCE_DIR}/disruptor/claim_strategy.h)
+                    ${PROJECT_SOURCE_DIR}/disruptor/claim_strategy.h
+                    ${PROJECT_SOURCE_DIR}/disruptor/sequence_barrier.h)
   include(Coveralls)
   coveralls_turn_on_coverage()
   coveralls_setup(

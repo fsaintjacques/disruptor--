@@ -76,7 +76,8 @@ BOOST_AUTO_TEST_CASE(WaitForCursor) {
 
   std::thread waiter2([this, &return_value]() {
     return_value.store(
-        barrier.WaitFor(kFirstSequenceValue + 1L));
+        barrier.WaitFor(kFirstSequenceValue + 1L,
+                        std::chrono::milliseconds(10)));
   });
 
   std::thread([this]() {
