@@ -43,18 +43,18 @@ class SequenceBarrier {
       : cursor_(cursor), dependents_(dependents), alerted_(false) {}
 
   int64_t WaitFor(const int64_t& sequence) {
-    return wait_strategy_.WaitFor(sequence, cursor_, dependent_sequences_,
-                                  alerted);
+    return wait_strategy_.WaitFor(sequence, cursor_, dependents_,
+                                  alerted_);
   }
 
   template <class R, class P>
   int64_t WaitFor(const int64_t& sequence,
                   const std::chrono::duration<R, P>& timeout) {
-    return wait_strategy_.WaitFor(sequence, cursor_, dependent_sequences_,
-                                  alerted, timeout);
+    return wait_strategy_.WaitFor(sequence, cursor_, dependents_,
+                                  alerted_, timeout);
   }
 
-  int64_t get_sequence() const { return cursor_->sequence(); }
+  int64_t get_sequence() const { return cursor_.sequence(); }
 
   bool alerted() const {
     return alerted_.load(std::memory_order::memory_order_acquire);
@@ -64,18 +64,10 @@ class SequenceBarrier {
     alerted_.store(alert, std::memory_order::memory_order_release);
   }
 
-  void ClearAlert() {
-    alerted_.store(false, std::memory_order::memory_order_release);
-  }
-
-  void CheckAlert() const {
-    if (IsAlerted()) throw AlertException();
-  }
-
  private:
   W wait_strategy_;
   const Sequence& cursor_;
-  const std::vector<Sequence*>& dependent_sequences_;
+  std::vector<Sequence*> dependents_;
   std::atomic<bool> alerted_;
 };
 
