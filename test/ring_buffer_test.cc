@@ -54,6 +54,9 @@ BOOST_AUTO_TEST_SUITE(RingBufferBasic)
 BOOST_FIXTURE_TEST_CASE(VerifyWrapArround, RingBufferFixture) {
   for (size_t i = 0; i < RING_BUFFER_SIZE * 2; i++)
     BOOST_CHECK_EQUAL(ring_buffer[i], f(i % RING_BUFFER_SIZE));
+
+  for (size_t i = 0; i < RING_BUFFER_SIZE * 2; i++)
+    const auto& t = ring_buffer[i];
 }
 
 BOOST_AUTO_TEST_SUITE_END()
