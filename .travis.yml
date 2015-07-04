@@ -27,8 +27,5 @@ matrix:
             - ubuntu-toolchain-r-test
             - llvm-toolchain-precise-3.6
 
-before_script:
-  - tools/deps
-
-script:
-  - tools/test
+install: tools/deps
+script:  tools/test
