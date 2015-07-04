@@ -28,7 +28,7 @@ matrix:
             - llvm-toolchain-precise-3.6
 
 install:
-  -${TRAVIS_BUILD_DIR}/tools/deps
+  - ${TRAVIS_BUILD_DIR}/tools/deps
 script:
   - ${TRAVIS_BUILD_DIR}/tools/build
   - ${TRAVIS_BUILD_DIR}/tools/test
