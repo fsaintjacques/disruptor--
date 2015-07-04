@@ -29,7 +29,6 @@ matrix:
 
 before_script:
   - tools/deps
-  - tools/build
 
 script:
   - tools/test
