@@ -89,6 +89,24 @@ BOOST_FIXTURE_TEST_CASE(HasAvalaibleCapacity, SingleThreadedStrategyFixture) {
   // all equals
   BOOST_CHECK_EQUAL(strategy.IncrementAndGet(RING_BUFFER_SIZE, one_dependents),
                     sequence_1.IncrementAndGet(RING_BUFFER_SIZE));
+
+}
+
+BOOST_FIXTURE_TEST_CASE(SetSequence, SingleThreadedStrategyFixture) {
+  auto one_dependents = oneDependents();
+
+  std::atomic<int64_t> return_value(kInitialCursorValue);
+  std::thread waiter([this, &one_dependents]() {
+    strategy.SetSequence(RING_BUFFER_SIZE, one_dependents);
+  });
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(10));
+  // advance late consumers
+  sequence_1.IncrementAndGet(2L);
+
+  // all equals
+  waiter.join();
+  BOOST_CHECK_EQUAL(strategy.HasAvalaibleCapacity(one_dependents), true);
 }
 
 BOOST_AUTO_TEST_SUITE_END()
