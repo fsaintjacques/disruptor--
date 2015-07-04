@@ -12,7 +12,8 @@
 //       names of its contributors may be used to endorse or promote products
 //       derived from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND
 // ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 // WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
 // DISCLAIMED. IN NO EVENT SHALL FRANÇOIS SAINT-JACQUES BE LIABLE FOR ANY
@@ -25,33 +26,32 @@
 
 #include "disruptor/interface.h"
 
-#ifndef DISRUPTOR_TEST_LONG_EVENT_H_ // NOLINT
-#define DISRUPTOR_TEST_LONG_EVENT_H_ // NOLINT
-
+#ifndef DISRUPTOR_TEST_LONG_EVENT_H_  // NOLINT
+#define DISRUPTOR_TEST_LONG_EVENT_H_  // NOLINT
 
 namespace disruptor {
 namespace test {
 
 class LongEvent {
  public:
-    LongEvent(const int64_t& value = 0) : value_(value) {}
+  LongEvent(const int64_t& value = 0) : value_(value) {}
 
-    int64_t value() const { return value_; }
+  int64_t value() const { return value_; }
 
-    void set_value(const int64_t& value) { value_ = value; }
+  void set_value(const int64_t& value) { value_ = value; }
 
  private:
-    int64_t value_;
+  int64_t value_;
 };
 
 class LongEventFactory : public EventFactoryInterface<LongEvent> {
  public:
-    virtual LongEvent* NewInstance(const int& size) const {
-        return new LongEvent[size];
-    }
+  virtual LongEvent* NewInstance(const int& size) const {
+    return new LongEvent[size];
+  }
 };
 
-}; // namespace test
-}; // namespace disruptor
+};  // namespace test
+};  // namespace disruptor
 
-#endif // DISRUPTOR_TEST_LONG_EVENT_H_ NOLINT
+#endif  // DISRUPTOR_TEST_LONG_EVENT_H_ NOLINT

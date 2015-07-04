@@ -12,7 +12,8 @@
 //       names of its contributors may be used to endorse or promote products
 //       derived from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND
 // ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 // WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
 // DISCLAIMED. IN NO EVENT SHALL FRANÇOIS SAINT-JACQUES BE LIABLE FOR ANY
@@ -32,28 +33,26 @@
 
 namespace disruptor {
 
-template<typename T>
-class IgnoreExceptionHandler: public ExceptionHandlerInterface<T> {
+template <typename T>
+class IgnoreExceptionHandler : public ExceptionHandlerInterface<T> {
  public:
-    virtual void Handle(const std::exception& exception,
-                         const int64_t& sequence,
-                         T* event) {
-        // do nothing with the exception.
-        ;
-    }
+  virtual void Handle(const std::exception& exception, const int64_t& sequence,
+                      T* event) {
+    // do nothing with the exception.
+    ;
+  }
 };
 
-template<typename T>
-class FatalExceptionHandler: public ExceptionHandlerInterface<T> {
+template <typename T>
+class FatalExceptionHandler : public ExceptionHandlerInterface<T> {
  public:
-    virtual void Handle(const std::exception& exception,
-                         const int64_t& sequence,
-                         T* event) {
-        // rethrow the exception
-        throw exception;
-    }
+  virtual void Handle(const std::exception& exception, const int64_t& sequence,
+                      T* event) {
+    // rethrow the exception
+    throw exception;
+  }
 };
 
 };  // namespace disruptor
 
-#endif // DISRUPTOR_EXCEPTION_HANDLER_H_  NOLINT
+#endif  // DISRUPTOR_EXCEPTION_HANDLER_H_  NOLINT

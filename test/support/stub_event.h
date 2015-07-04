@@ -12,7 +12,8 @@
 //       names of its contributors may be used to endorse or promote products
 //       derived from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND
 // ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
 // WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
 // DISCLAIMED. IN NO EVENT SHALL FRANÇOIS SAINT-JACQUES BE LIABLE FOR ANY
@@ -29,57 +30,53 @@
 
 #include "long_event.h"
 
-#ifndef DISRUPTOR_TEST_STUB_EVENT_H_ // NOLINT
-#define DISRUPTOR_TEST_STUB_EVENT_H_ // NOLINT
-
+#ifndef DISRUPTOR_TEST_STUB_EVENT_H_  // NOLINT
+#define DISRUPTOR_TEST_STUB_EVENT_H_  // NOLINT
 
 namespace disruptor {
 namespace test {
 
 class StubEvent : public LongEvent {
  public:
-    StubEvent(const int64_t& value = 0) : LongEvent(value) {}
+  StubEvent(const int64_t& value = 0) : LongEvent(value) {}
 
-    std::string test_string() const { return test_string_; }
+  std::string test_string() const { return test_string_; }
 
-    void set_test_string(const std::string& test_string) {
-        test_string_ = test_string;
-    }
+  void set_test_string(const std::string& test_string) {
+    test_string_ = test_string;
+  }
 
  private:
-    std::string test_string_;
+  std::string test_string_;
 };
 
 class StubEventFactory : public EventFactoryInterface<StubEvent> {
  public:
-    virtual StubEvent* NewInstance(const int& size) const {
-        return new StubEvent[size];
-    }
+  virtual StubEvent* NewInstance(const int& size) const {
+    return new StubEvent[size];
+  }
 };
 
 class StubBatchHandler : public EventHandlerInterface<StubEvent> {
  public:
-    virtual void OnEvent(const int64_t& sequence,
-                         const bool& end_of_batch,
-                         StubEvent* event) {
-        if (event)
-            event->set_value(sequence);
-    };
+  virtual void OnEvent(const int64_t& sequence, const bool& end_of_batch,
+                       StubEvent* event) {
+    if (event) event->set_value(sequence);
+  };
 
-    virtual void OnStart() {}
-    virtual void OnShutdown() {}
+  virtual void OnStart() {}
+  virtual void OnShutdown() {}
 };
 
 class StubEventTranslator : public EventTranslatorInterface<StubEvent> {
  public:
-    virtual StubEvent* TranslateTo(const int64_t& sequence, StubEvent* event) {
-        event->set_value(sequence);
-        return event;
-    };
-
+  virtual StubEvent* TranslateTo(const int64_t& sequence, StubEvent* event) {
+    event->set_value(sequence);
+    return event;
+  };
 };
 
-}; // namespace test
-}; // namespace disruptor
+};  // namespace test
+};  // namespace disruptor
 
-#endif // DISRUPTOR_TEST_LONG_EVENT_H_ NOLINT
+#endif  // DISRUPTOR_TEST_LONG_EVENT_H_ NOLINT

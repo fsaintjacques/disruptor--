@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+function fetch_cmake {
+  local cmake_url="http://www.cmake.org/files/v3.2/cmake-3.2.3-Linux-x86_64.tar.gz"
+  mkdir cmake
+  travis_retry wget --quiet -O - ${cmake_url} | tar --strip-components=1 -xz -C cmake
+  export PATH=${PWD}/cmake/bin:${PATH}
+}
+
+function set_travis_compiler {
+  if [[ $COMPILER = clang ]] ; then
+    export CXX="clang++-${CLANG_VERSION}" ;
+  elif [[ $COMPILER = gcc ]] ; then
+    export CXX="g++-${GCC_VERSION}" ;
+  fi
+}
+
+fetch_cmake
+set_travis_compiler
+mkdir -p build
