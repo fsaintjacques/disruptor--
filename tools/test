@@ -4,5 +4,11 @@ set -o errexit
 set -o nounset
 set -o pipefail
 
-cd build
-make test
+function prepare_build_dir {
+  mkdir -p build
+  cd build
+  cmake -DCOVERALLS=ON -DCMAKE_BUILD_TYPE=Debug ..
+}
+
+prepare_build_dir
+make all test

@@ -30,5 +30,4 @@ matrix:
 install:
   - ${TRAVIS_BUILD_DIR}/tools/deps
 script:
-  - ${TRAVIS_BUILD_DIR}/tools/build
   - ${TRAVIS_BUILD_DIR}/tools/test
