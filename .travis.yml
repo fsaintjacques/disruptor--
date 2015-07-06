@@ -38,6 +38,28 @@ matrix:
           sources:
             - ubuntu-toolchain-r-test
 
+    - env: COMPILER=gcc GCC_VERSION=4.9
+      addons: &gcc49
+        apt:
+          packages:
+            - gcc-4.9
+            - g++-4.9
+            - valgrind
+            - libboost-all-dev
+          sources:
+            - ubuntu-toolchain-r-test
+
+    - env: COMPILER=gcc GCC_VERSION=5
+      addons: &gcc49
+        apt:
+          packages:
+            - gcc-5
+            - g++-5
+            - valgrind
+            - libboost-all-dev
+          sources:
+            - ubuntu-toolchain-r-test
+
 install:
   - cd ${TRAVIS_BUILD_DIR} && tools/deps
 script:
