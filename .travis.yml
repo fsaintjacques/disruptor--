@@ -10,6 +10,9 @@ matrix:
         apt:
           packages:
             - clang-3.5
+            - llvm-3.5
+            - llvm-3.5-tools
+            - llvm-toolchain-3.5
             - valgrind
             - libboost-all-dev
           sources:
@@ -21,6 +24,9 @@ matrix:
         apt:
           packages:
             - clang-3.6
+            - llvm-3.6
+            - llvm-3.6-tools
+            - llvm-toolchain-3.6
             - valgrind
             - libboost-all-dev
           sources:
