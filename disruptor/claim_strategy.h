@@ -102,7 +102,7 @@ class MultiThreadedStrategy {
 
   int64_t IncrementAndGet(const std::vector<Sequence*>& dependents) {
     WaitForCapacity(dependents, min_gating_sequence_local_);
-    int64_t next_sequence = sequence_.IncrementAndGet();
+    int64_t next_sequence = sequence_.IncrementAndGet(1L);
     WaitForFreeSlotAt(next_sequence, dependents, min_gating_sequence_local_);
     return next_sequence;
   }
