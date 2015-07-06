@@ -5,9 +5,9 @@ set -o nounset
 set -o pipefail
 
 function set_travis_compiler {
-  if [[ ${COMPILER:-} = clang ]] ; then
+  if [[ -n "${CLANG_VERSION:-}" ]]; then
     export CXX="clang++-${CLANG_VERSION}" ;
-  elif [[ ${COMPILER:-} = gcc ]] ; then
+  elif [[ -n "${GCC_VERSION:-}" ]]; then
     export CXX="g++-${GCC_VERSION}" ;
   fi
 }

@@ -5,7 +5,7 @@ sudo: false
 matrix:
   include:
 
-    - env: COMPILER=clang CLANG_VERSION=3.5
+    - env: CLANG_VERSION=3.5
       addons: &clang35
         apt:
           packages:
@@ -16,7 +16,7 @@ matrix:
             - ubuntu-toolchain-r-test
             - llvm-toolchain-precise-3.5
 
-    - env: COMPILER=clang CLANG_VERSION=3.6
+    - env: CLANG_VERSION=3.6
       addons: &clang36
         apt:
           packages:
@@ -27,7 +27,7 @@ matrix:
             - ubuntu-toolchain-r-test
             - llvm-toolchain-precise-3.6
 
-    - env: COMPILER=gcc GCC_VERSION=4.8
+    - env: GCC_VERSION=4.8
       addons: &gcc48
         apt:
           packages:
@@ -38,7 +38,7 @@ matrix:
           sources:
             - ubuntu-toolchain-r-test
 
-    - env: COMPILER=gcc GCC_VERSION=4.9
+    - env: GCC_VERSION=4.9
       addons: &gcc49
         apt:
           packages:
@@ -49,7 +49,7 @@ matrix:
           sources:
             - ubuntu-toolchain-r-test
 
-    - env: COMPILER=gcc GCC_VERSION=5
+    - env: GCC_VERSION=5
       addons: &gcc49
         apt:
           packages:
