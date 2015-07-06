@@ -67,7 +67,11 @@ endif()
 # CMake list format.
 string(REGEX REPLACE "\\*" ";" COVERAGE_SRCS ${COVERAGE_SRCS})
 
-find_program(GCOV_EXECUTABLE gcov)
+if (NOT DEFINED ENV{GCOV})
+  find_program(GCOV_EXECUTABLE gcov)
+else()
+  find_program(GCOV_EXECUTABLE $ENV{GCOV})
+endif()
 
 if (NOT GCOV_EXECUTABLE)
 	message(FATAL_ERROR "gcov not found! Aborting...")
