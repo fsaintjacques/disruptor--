@@ -1,44 +1,46 @@
-language
-    : c++ os
-      : linux sudo
-        : false
+language: c++
+os: linux
+sudo: false
 
-          matrix
-          : include :
+matrix:
+  include:
 
-            -env
-            : COMPILER = clang CLANG_VERSION =
-                  3.5 addons : &clang35 apt
-                               : packages
-                                 : -clang -
-                                   3.5 - valgrind - libboost - all - dev sources
-                                   : -ubuntu -
-                                     toolchain - r - test - llvm - toolchain -
-                                     precise - 3.5
+    - env: COMPILER=clang CLANG_VERSION=3.5
+      addons: &clang35
+        apt:
+          packages:
+            - clang-3.5
+            - valgrind
+            - libboost-all-dev
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-precise-3.5
 
-                                     -
-                                     env : COMPILER = clang CLANG_VERSION =
-                      3.6 addons
-                      : &clang36 apt
-                        : packages
-                          : -clang -
-                            3.6 - valgrind - libboost - all -
-                            dev sources : -ubuntu - toolchain - r - test -
-                                          llvm - toolchain - precise - 3.6
+    - env: COMPILER=clang CLANG_VERSION=3.6
+      addons: &clang36
+        apt:
+          packages:
+            - clang-3.6
+            - valgrind
+            - libboost-all-dev
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-precise-3.6
 
-                                          -
-                                          env : COMPILER = gcc GCC_VERSION =
-                          4.8 addons : &clang36 apt
-                                       : packages
-                                         : -gcc -
-                                           4.8 - g++ - 4.8 - valgrind -
-                                           libboost - all - dev sources
-                                           : -ubuntu -
-                                             toolchain - r - test
+    - env: COMPILER=gcc GCC_VERSION=4.8
+      addons: &gcc48
+        apt:
+          packages:
+            - gcc-4.8
+            - g++-4.8
+            - valgrind
+            - libboost-all-dev
+          sources:
+            - ubuntu-toolchain-r-test
 
-                                                                 install
-                                             : -cd ${TRAVIS_BUILD_DIR} &&
-                          tools / deps script : -cd ${TRAVIS_BUILD_DIR} &&
-                          tools / test after_success
-                              : -cd ${TRAVIS_BUILD_DIR} &&
-                          tools / coverage
+install:
+  - cd ${TRAVIS_BUILD_DIR} && tools/deps
+script:
+  - cd ${TRAVIS_BUILD_DIR} && tools/test
+after_success:
+  - cd ${TRAVIS_BUILD_DIR} && tools/coverage
