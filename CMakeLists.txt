@@ -46,7 +46,8 @@ include_directories(${Boost_INCLUDE_DIR})
 set(COVERAGE_MODUDLE_PATH ${PROJECT_SOURCE_DIR}/tools/coveralls-cmake/cmake)
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/tools/coveralls-cmake/cmake)
 if (COVERALLS)
-  set(COVERAGE_SRCS ${PROJECT_SOURCE_DIR}/disruptor/ring_buffer.h
+  set(COVERAGE_SRCS ${PROJECT_SOURCE_DIR}/disruptor/sequence.h
+                    ${PROJECT_SOURCE_DIR}/disruptor/ring_buffer.h
                     ${PROJECT_SOURCE_DIR}/disruptor/wait_strategy.h
                     ${PROJECT_SOURCE_DIR}/disruptor/claim_strategy.h
                     ${PROJECT_SOURCE_DIR}/disruptor/sequence_barrier.h
@@ -61,6 +62,10 @@ endif()
 
 # tests
 enable_testing()
+
+add_executable(sequence_test_bin test/sequence_test.cc)
+target_link_libraries(sequence_test_bin ${Boost_LIBRARIES})
+add_test(sequence_test sequence_test_bin)
 
 add_executable(ring_buffer_test_bin test/ring_buffer_test.cc)
 target_link_libraries(ring_buffer_test_bin ${Boost_LIBRARIES})
