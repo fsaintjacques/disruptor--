@@ -10,3 +10,20 @@ Supported compilers:
   - gcc-4.8
   - gcc-4.9
   - gcc-5
+
+Build instructions
+------------------
+
+This library is a header-only library and doesn't require compile step, simply
+point your compiler to the `disruptor/` folder.
+
+If you want to develop and/or submit patches to `disruptor--` you need:
+  - CMake >= 3.0.1
+  - libboost-test
+
+Once dependencies are met
+
+```
+# mkdir -p build && cd build
+# cmake .. && make all test
+```
