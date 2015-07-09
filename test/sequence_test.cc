@@ -56,10 +56,6 @@ BOOST_AUTO_TEST_CASE(AtLeastOneCacheLine) {
   BOOST_CHECK(sizeof(Sequence) >= CACHE_LINE_SIZE_IN_BYTES);
 }
 
-BOOST_AUTO_TEST_CASE(IsLockFree) {
-  BOOST_CHECK(std::atomic<uint64_t>().is_lock_free());
-}
-
 BOOST_AUTO_TEST_CASE(IsCacheLineAligned) {
   BOOST_CHECK_EQUAL(alignof(Sequence), CACHE_LINE_SIZE_IN_BYTES / 8);
 }
