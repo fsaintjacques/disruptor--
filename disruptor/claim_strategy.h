@@ -87,108 +87,10 @@ class SingleThreadedStrategy {
     }
   }
 
-  PaddedLong sequence_;
-  PaddedLong min_gating_sequence_;
-
-  DISALLOW_COPY_MOVE_AND_ASSIGN(SingleThreadedStrategy);
-};
-
-// Strategy to be used when there are multiple publisher threads claiming
-// {@link AbstractEvent}s.
-template <size_t N>
-class MultiThreadedStrategy {
- public:
-  MultiThreadedStrategy() : sequence_(kInitialCursorValue) {}
-
-  int64_t IncrementAndGet(const std::vector<Sequence*>& dependents) {
-    WaitForCapacity(dependents, min_gating_sequence_local_);
-    int64_t next_sequence = sequence_.IncrementAndGet(1L);
-    WaitForFreeSlotAt(next_sequence, dependents, min_gating_sequence_local_);
-    return next_sequence;
-  }
-
-  int64_t IncrementAndGet(const int& delta,
-                          const std::vector<Sequence*>& dependents) {
-    int64_t next_sequence = sequence_.IncrementAndGet(delta);
-    WaitForFreeSlotAt(next_sequence, dependents, min_gating_sequence_local_);
-    return next_sequence;
-  }
-  void SetSequence(const int64_t& sequence,
-                   const std::vector<Sequence*>& dependents) {
-    sequence_.set_sequence(sequence);
-    WaitForFreeSlotAt(sequence, dependents, min_gating_sequence_local_);
-  }
-
-  bool HasAvalaibleCapacity(const std::vector<Sequence*>& dependents) {
-    const int64_t wrap_point = sequence_.sequence() + 1L - N;
-    if (wrap_point > min_gating_sequence_local_.sequence()) {
-      int64_t min_sequence = GetMinimumSequence(dependents);
-      min_gating_sequence_local_.set_sequence(min_sequence);
-      if (wrap_point > min_sequence) return false;
-    }
-    return true;
-  }
-
-  void SerialisePublishing(const Sequence& cursor, const int64_t& sequence,
-                           const int64_t& batch_size) {
-    int64_t expected_sequence = sequence - batch_size;
-    int counter = retries;
-
-    while (expected_sequence != cursor.sequence()) {
-      if (0 == --counter) {
-        counter = retries;
-        std::this_thread::yield();
-      }
-    }
-  }
-
- private:
-  // Methods
-  void WaitForCapacity(const std::vector<Sequence*>& dependents,
-                       Sequence& min_gating_sequence) {
-    const int64_t wrap_point = sequence_.sequence() + 1L - N;
-    if (wrap_point > min_gating_sequence.sequence()) {
-      int counter = retries;
-      int64_t min_sequence;
-      while (wrap_point > (min_sequence = GetMinimumSequence(dependents))) {
-        counter = ApplyBackPressure(counter);
-      }
-      min_gating_sequence.set_sequence(min_sequence);
-    }
-  }
-
-  void WaitForFreeSlotAt(const int64_t& sequence,
-                         const std::vector<Sequence*>& dependents,
-                         Sequence& min_gating_sequence) {
-    const int64_t wrap_point = sequence - N;
-    if (wrap_point > min_gating_sequence.sequence()) {
-      int64_t min_sequence;
-      while (wrap_point > (min_sequence = GetMinimumSequence(dependents))) {
-        std::this_thread::yield();
-      }
-      min_gating_sequence.set_sequence(min_sequence);
-    }
-  }
-
-  int ApplyBackPressure(int counter) {
-    if (0 != counter) {
-      --counter;
-      std::this_thread::yield();
-    } else {
-      std::this_thread::sleep_for(std::chrono::milliseconds(1));
-    }
-
-    return counter;
-  }
-
-  PaddedSequence min_gating_sequence_local_;
   PaddedSequence sequence_;
-  // TODO: make thread_local
   PaddedSequence min_gating_sequence_;
 
-  const int retries = 100;
-
-  DISALLOW_COPY_MOVE_AND_ASSIGN(MultiThreadedStrategy);
+  DISALLOW_COPY_MOVE_AND_ASSIGN(SingleThreadedStrategy);
 };
 
 };  // namespace disruptor
