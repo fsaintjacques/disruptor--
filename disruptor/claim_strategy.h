@@ -87,8 +87,8 @@ class SingleThreadedStrategy {
     }
   }
 
-  PaddedSequence sequence_;
-  PaddedSequence min_gating_sequence_;
+  Sequence sequence_;
+  Sequence min_gating_sequence_;
 
   DISALLOW_COPY_MOVE_AND_ASSIGN(SingleThreadedStrategy);
 };

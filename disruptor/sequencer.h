@@ -150,7 +150,7 @@ class Sequencer {
   // Members
   RingBuffer<T, N> ring_buffer_;
 
-  PaddedSequence cursor_;
+  Sequence cursor_;
   std::vector<Sequence*> gating_sequences_;
 
   C claim_strategy_;

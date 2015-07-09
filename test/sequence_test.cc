@@ -37,7 +37,7 @@ namespace disruptor {
 namespace test {
 
 struct SequenceFixture {
-  PaddedSequence seq;
+  Sequence seq;
 };
 
 BOOST_FIXTURE_TEST_SUITE(SequenceBasic, SequenceFixture)
@@ -53,7 +53,15 @@ BOOST_AUTO_TEST_CASE(ShouldStartWithValueInitialized) {
 }
 
 BOOST_AUTO_TEST_CASE(AtLeastOneCacheLine) {
-  BOOST_CHECK(sizeof(PaddedSequence) >= CACHE_LINE_SIZE_IN_BYTES);
+  BOOST_CHECK(sizeof(Sequence) >= CACHE_LINE_SIZE_IN_BYTES);
+}
+
+BOOST_AUTO_TEST_CASE(IsLockFree) {
+  BOOST_CHECK(std::atomic<uint64_t>().is_lock_free());
+}
+
+BOOST_AUTO_TEST_CASE(IsCacheLineAligned) {
+  BOOST_CHECK_EQUAL(alignof(Sequence), CACHE_LINE_SIZE_IN_BYTES / 8);
 }
 
 BOOST_AUTO_TEST_SUITE_END()  // BlockingStrategy suite
