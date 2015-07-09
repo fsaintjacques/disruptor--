@@ -79,10 +79,12 @@ class Sequence {
   }
 
  private:
+  // padding
+  int64_t padding0_[ATOMIC_SEQUENCE_PADDING_LENGTH];
   // members
   std::atomic<int64_t> sequence_;
   // padding
-  int64_t padding_[ATOMIC_SEQUENCE_PADDING_LENGTH];
+  int64_t padding1_[ATOMIC_SEQUENCE_PADDING_LENGTH];
 
   DISALLOW_COPY_MOVE_AND_ASSIGN(Sequence);
 };

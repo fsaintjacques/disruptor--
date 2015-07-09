@@ -26,10 +26,6 @@
 #ifndef DISRUPTOR_SEQUENCER_H_  // NOLINT
 #define DISRUPTOR_SEQUENCER_H_  // NOLINT
 
-#include <condition_variable>
-#include <mutex>
-#include <vector>
-
 #include "disruptor/batch_descriptor.h"
 #include "disruptor/claim_strategy.h"
 #include "disruptor/wait_strategy.h"
@@ -44,10 +40,6 @@ template <typename T, size_t N = kDefaultRingBufferSize,
 class Sequencer {
  public:
   // Construct a Sequencer with the selected strategies.
-  //
-  // @param buffer_size over which sequences are valid.
-  // @param claim_strategy_option for those claiming sequences.
-  // @param wait_strategy_option for those waiting on sequences.
   Sequencer(std::array<T, N> events) : ring_buffer_(events) {}
 
   // Set the sequences that will gate publishers to prevent the buffer
@@ -67,15 +59,6 @@ class Sequencer {
     return SequenceBarrier<W>(cursor_, dependents);
   }
 
-  // Create a new {@link BatchDescriptor} that is the minimum of the
-  // requested size and the buffer_size.
-  //
-  // @param size for the new batch.
-  // @return the new {@link BatchDescriptor}.
-  BatchDescriptor NewBatchDescriptor(const int& size) {
-    return BatchDescriptor(size < N ? size : N);
-  }
-
   // Get the value of the cursor indicating the published sequence.
   //
   // @return value of the cursor for events that have been published.
@@ -90,71 +73,34 @@ class Sequencer {
     return claim_strategy_.HasAvalaibleCapacity(gating_sequences_);
   }
 
-  // Claim the next event in sequence for publishing to the {@link RingBuffer}.
-  //
-  // @return the claimed sequence.
-  int64_t Next() { return claim_strategy_.IncrementAndGet(gating_sequences_); }
-
   // Claim the next batch of sequence numbers for publishing.
   //
   // @param batch_descriptor to be updated for the batch range.
   // @return the updated batch_descriptor.
-  BatchDescriptor* Next(BatchDescriptor* batch_descriptor) {
-    int64_t sequence = claim_strategy_->IncrementAndGet(
-        batch_descriptor->size(), gating_sequences_);
-    batch_descriptor->set_end(sequence);
-    return batch_descriptor;
-  }
-
-  // Claim a specific sequence when only one publisher is involved.
-  //
-  // @param sequence to be claimed.
-  // @return sequence just claimed.
-  int64_t Claim(const int64_t& sequence) {
-    claim_strategy_.SetSequence(sequence, gating_sequences_);
-    return sequence;
+  int64_t Next(size_t delta = 1) {
+    return claim_strategy_.IncrementAndGet(gating_sequences_, delta);
   }
 
   // Publish an event and make it visible to {@link EventProcessor}s.
   //
   // @param sequence to be published.
-  void Publish(const int64_t& sequence) { Publish(sequence, 1); }
-
-  // Publish the batch of events in sequence.
-  //
-  // @param sequence to be published.
-  void Publish(const BatchDescriptor& batch_descriptor) {
-    Publish(batch_descriptor.end(), batch_descriptor.size());
-  }
-
-  // Force the publication of a cursor sequence.
-  //
-  // Only use this method when forcing a sequence and you are sure only one
-  // publisher exists. This will cause the cursor to advance to this
-  // sequence.
-  //
-  // @param sequence to which is to be forced for publication.
-  void ForcePublish(const int64_t& sequence) {
+  void Publish(const int64_t& sequence, size_t delta = 1) {
+    claim_strategy_.SynchronizePublishing(sequence, cursor_, delta);
     cursor_.set_sequence(sequence);
     wait_strategy_.SignalAllWhenBlocking();
   }
 
  private:
-  // Helpers
-  void Publish(const int64_t& sequence, const int64_t& batch_size) {
-    claim_strategy_.SerialisePublishing(sequence, cursor_, batch_size);
-    cursor_.set_sequence(sequence);
-    wait_strategy_.SignalAllWhenBlocking();
-  }
-
   // Members
   RingBuffer<T, N> ring_buffer_;
 
   Sequence cursor_;
-  std::vector<Sequence*> gating_sequences_;
 
   C claim_strategy_;
+
   W wait_strategy_;
+
+  std::vector<Sequence*> gating_sequences_;
 
   DISALLOW_COPY_MOVE_AND_ASSIGN(Sequencer);
 };
