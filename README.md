@@ -14,8 +14,8 @@ Supported compilers:
 Build instructions
 ------------------
 
-This library is a header-only library and doesn't require compile step, simply
-point your compiler to the `disruptor/` folder.
+This library is a header-only library and doesn't require compile step,
+move/copy the `disruptor/` folder in one of the include folder.
 
 If you want to develop and/or submit patches to `disruptor--` you need:
   - CMake >= 3.0.1

@@ -90,6 +90,8 @@ class Sequencer {
     wait_strategy_.SignalAllWhenBlocking();
   }
 
+  T& operator[](const int64_t& sequence) { return ring_buffer_[sequence]; }
+
  private:
   // Members
   RingBuffer<T, N> ring_buffer_;
