@@ -24,38 +24,61 @@
 // THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #define BOOST_TEST_DYN_LINK
-#define BOOST_TEST_MODULE RingBufferTest
+#define BOOST_TEST_MODULE SequenceBarrier
 
 #define RING_BUFFER_SIZE 8
 
 #include <boost/test/unit_test.hpp>
-#include <disruptor/ring_buffer.h>
+#include <disruptor/sequence_barrier.h>
 
 namespace disruptor {
 namespace test {
 
-struct RingBufferFixture {
-  RingBufferFixture() : ring_buffer(initArray()) {}
+struct SequenceBarrierFixture {
+  SequenceBarrierFixture() : barrier(cursor, dependents) {}
 
-  size_t f(const size_t i) { return i + 1; }
+  Sequence cursor;
+  Sequence sequence_1;
+  Sequence sequence_2;
+  Sequence sequence_3;
+  std::vector<Sequence*> dependents;
+  SequenceBarrier<> barrier;
 
-  std::array<int, RING_BUFFER_SIZE> initArray() {
-    std::array<int, RING_BUFFER_SIZE> tmp;
-    for (size_t i = 0; i < RING_BUFFER_SIZE; i++) tmp[i] = f(i);
-    return tmp;
+  std::vector<Sequence*> allDependents() {
+    std::vector<Sequence*> d = {&sequence_1, &sequence_2, &sequence_3};
+    return d;
   }
-
-  RingBuffer<int, RING_BUFFER_SIZE> ring_buffer;
 };
 
-BOOST_AUTO_TEST_SUITE(RingBufferBasic)
+BOOST_FIXTURE_TEST_SUITE(SequenceBarrier, SequenceBarrierFixture)
 
-BOOST_FIXTURE_TEST_CASE(VerifyWrapArround, RingBufferFixture) {
-  for (size_t i = 0; i < RING_BUFFER_SIZE * 2; i++)
-    BOOST_CHECK_EQUAL(ring_buffer[i], f(i % RING_BUFFER_SIZE));
+BOOST_AUTO_TEST_CASE(BasicSetterAndGetter) {
+  BOOST_CHECK_EQUAL(barrier.alerted(), false);
+  barrier.set_alerted(true);
+  BOOST_CHECK_EQUAL(barrier.alerted(), true);
+}
 
-  for (size_t i = 0; i < RING_BUFFER_SIZE * 2; i++)
-    const auto& t = ring_buffer[i];
+BOOST_AUTO_TEST_CASE(WaitForCursor) {
+  std::atomic<int64_t> return_value(kInitialCursorValue);
+
+  std::thread waiter([this, &return_value]() {
+    return_value.store(barrier.WaitFor(kFirstSequenceValue));
+  });
+
+  BOOST_CHECK_EQUAL(return_value.load(), kInitialCursorValue);
+  std::thread([this]() { cursor.IncrementAndGet(1L); }).join();
+  waiter.join();
+  BOOST_CHECK_EQUAL(return_value.load(), kFirstSequenceValue);
+
+  std::thread waiter2([this, &return_value]() {
+    return_value.store(
+        barrier.WaitFor(kFirstSequenceValue + 1L, std::chrono::seconds(5)));
+  });
+
+  std::thread([this]() { cursor.IncrementAndGet(1L); }).join();
+
+  waiter2.join();
+  BOOST_CHECK_EQUAL(return_value.load(), kFirstSequenceValue + 1L);
 }
 
 BOOST_AUTO_TEST_SUITE_END()

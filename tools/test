@@ -1,0 +1,31 @@
+#!/usr/bin/env bash
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+function set_travis_compiler {
+  if [[ -n "${CLANG_VERSION:-}" ]]; then
+    export CXX="clang++-${CLANG_VERSION}" ;
+    export GCOV="llvm-cov-${CLANG_VERSION}" ;
+  elif [[ -n "${GCC_VERSION:-}" ]]; then
+    export CXX="g++-${GCC_VERSION}" ;
+    export GCOV="gcov-${GCC_VERSION}" ;
+  fi
+}
+
+function prepare_build_dir {
+  mkdir -p build
+
+  # custom build cmake in path
+  if [[ -e ${PWD}/cmake ]]; then
+    export PATH=${PWD}/cmake/bin:${PATH}
+  fi
+
+  cd build
+  cmake -DCOVERALLS=ON -DCOVERALLS_UPLOAD=ON -DCMAKE_BUILD_TYPE=Debug ..
+}
+
+set_travis_compiler
+prepare_build_dir
+make all test

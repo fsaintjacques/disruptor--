@@ -1,4 +1,4 @@
-// Copyright (c) 2011-2015, François Saint-Jacques
+// Copyright (c) 2011-2015, Francois Saint-Jacques
 // All rights reserved.
 //
 // Redistribution and use in source and binary forms, with or without
@@ -12,221 +12,145 @@
 //       names of its contributors may be used to endorse or promote products
 //       derived from this software without specific prior written permission.
 //
-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS" AND
-// ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
-// WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
-// DISCLAIMED. IN NO EVENT SHALL FRANÇOIS SAINT-JACQUES BE LIABLE FOR ANY
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL FRANCOIS SAINT-JACQUES BE LIABLE FOR ANY
 // DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
 // (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
 // LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
 // ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-// SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+// THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef DISRUPTOR_CLAIM_STRATEGY_H_ // NOLINT
-#define DISRUPTOR_CLAIM_STRATEGY_H_ // NOLINT
+#ifndef DISRUPTOR_CLAIM_STRATEGY_H_  // NOLINT
+#define DISRUPTOR_CLAIM_STRATEGY_H_  // NOLINT
 
 #include <thread>
-#include <vector>
 
-#include "disruptor/interface.h"
+#include "disruptor/sequence.h"
+#include "disruptor/ring_buffer.h"
 
 namespace disruptor {
 
-enum ClaimStrategyOption {
-    kSingleThreadedStrategy,
-    kMultiThreadedStrategy
-};
-
-// Optimised strategy can be used when there is a single publisher thread
-// claiming {@link AbstractEvent}s.
-class SingleThreadedStrategy :  public ClaimStrategyInterface {
- public:
-    SingleThreadedStrategy(const int& buffer_size) :
-        buffer_size_(buffer_size),
-        sequence_(kInitialCursorValue),
-        min_gating_sequence_(kInitialCursorValue) {}
-
-    virtual int64_t IncrementAndGet(
-            const std::vector<Sequence*>& dependent_sequences) {
-        int64_t next_sequence = sequence_.IncrementAndGet(1L);
-        WaitForFreeSlotAt(next_sequence, dependent_sequences);
-        return next_sequence;
-    }
-
-    virtual int64_t IncrementAndGet(const int& delta,
-            const std::vector<Sequence*>& dependent_sequences) {
-        int64_t next_sequence = sequence_.IncrementAndGet(delta);
-        WaitForFreeSlotAt(next_sequence, dependent_sequences);
-        return next_sequence;
-    }
-
-    virtual bool HasAvalaibleCapacity(
-            const std::vector<Sequence*>& dependent_sequences) {
-        int64_t wrap_point = sequence_.sequence() + 1L - buffer_size_;
-        if (wrap_point > min_gating_sequence_.sequence()) {
-            int64_t min_sequence = GetMinimumSequence(dependent_sequences);
-            min_gating_sequence_.set_sequence(min_sequence);
-            if (wrap_point > min_sequence)
-                return false;
-        }
-        return true;
-    }
-
-    virtual void SetSequence(const int64_t& sequence,
-            const std::vector<Sequence*>& dependent_sequences) {
-        sequence_.set_sequence(sequence);
-        WaitForFreeSlotAt(sequence, dependent_sequences);
-    }
-
-    virtual void SerialisePublishing(const int64_t& sequence,
-                                     const Sequence& cursor,
-                                     const int64_t& batch_size) {}
-
- private:
-    SingleThreadedStrategy();
-
-    void WaitForFreeSlotAt(const int64_t& sequence,
-            const std::vector<Sequence*>& dependent_sequences) {
-        int64_t wrap_point = sequence - buffer_size_;
-        if (wrap_point > min_gating_sequence_.sequence()) {
-            int64_t min_sequence;
-            while (wrap_point > (min_sequence = GetMinimumSequence(dependent_sequences))) {
-                std::this_thread::yield();
-            }
-        }
-    }
-
-    const int buffer_size_;
-    PaddedLong sequence_;
-    PaddedLong min_gating_sequence_;
-
-    DISALLOW_COPY_AND_ASSIGN(SingleThreadedStrategy);
-};
-
-// Strategy to be used when there are multiple publisher threads claiming
-// {@link AbstractEvent}s.
 /*
-class MultiThreadedStrategy :  public ClaimStrategyInterface {
+// Strategy employed by a {@link Publisher} to wait claim and publish sequences
+// on the sequencer.
+//
+class ClaimStrategy {
  public:
-    MultiThreadedStrategy(const int& buffer_size) :
-        buffer_size_(buffer_size),
-        sequence_(kInitialCursorValue),
-        min_processor_sequence_(kInitialCursorValue) {}
+  // Wait for the given sequence to be available for consumption.
+  //
+  // @param dependents  dependents sequences to wait on (mostly consumers).
+  // @param delta       sequences to claim [default: 1].
+  //
+  // @return last claimed sequence.
+  int64_t IncrementAndGet(const std::vector<Sequence*>& dependents,
+                          size_t delta = 1);
 
-    virtual int64_t IncrementAndGet(
-            const std::vector<Sequence*>& dependent_sequences) {
-        WaitForCapacity(dependent_sequences, min_gating_sequence_local_);
-        int64_t next_sequence = sequence_.IncrementAndGet();
-        WaitForFreeSlotAt(next_sequence,
-                          dependent_sequences,
-                          min_gating_sequence_local_);
-        return next_sequence;
-    }
+  // Verify in a non-blocking way that there exists claimable sequences.
+  //
+  // @param dependents  dependents sequences to wait on (mostly consumers).
+  //
+  // @return last claimed sequence.
+  bool HasAvalaibleCapacity(const std::vector<Sequence*>& dependents);
 
-    virtual int64_t IncrementAndGet(const int& delta,
-            const std::vector<Sequence*>& dependent_sequences) {
-        int64_t next_sequence = sequence_.IncrementAndGet(delta);
-        WaitForFreeSlotAt(next_sequence,
-                          dependent_sequences,
-                          min_gating_sequence_local_);
-        return next_sequence;
-    }
-    virtual void SetSequence(const int64_t& sequence,
-            const std::vector<Sequence*>& dependent_sequences) {
-        sequence_.set_sequence(sequence);
-        WaitForFreeSlotAt(sequence,
-                          dependent_sequences,
-                          min_gating_sequence_local_);
-    }
-
-    virtual bool HasAvalaibleCapacity(
-            const std::vector<Sequence*>& dependent_sequences) {
-        const int64_t wrap_point = sequence_.sequence() + 1L - buffer_size_;
-        if (wrap_point > min_gating_sequence_local_.sequence()) {
-            int64_t min_sequence = GetMinimumSequence(dependent_sequences);
-            min_gating_sequence_local_.set_sequence(min_sequence);
-            if (wrap_point > min_sequence)
-                return false;
-        }
-        return true;
-    }
-
-    virtual void SerialisePublishing(const Sequence& cursor,
-                                     const int64_t& sequence,
-                                     const int64_t& batch_size) {
-        int64_t expected_sequence = sequence - batch_size;
-        int counter = retries;
-
-        while (expected_sequence != cursor.sequence()) {
-            if (0 == --counter) {
-                counter = retries;
-                std::this_thread::yield();
-            }
-        }
-    }
-
- private:
-    // Methods
-    void WaitForCapacity(const std::vector<Sequence*>& dependent_sequences,
-                         const MutableLong& min_gating_sequence) {
-        const int64_t wrap_point = sequence_.sequence() + 1L - buffer_size_;
-        if (wrap_point > min_gating_sequence.sequence()) {
-            int counter = retries;
-            int64_t min_sequence;
-            while (wrap_point > (min_sequence = GetMinimumSequence(dependent_sequences))) {
-                counter = ApplyBackPressure(counter);
-            }
-            min_gating_sequence.set_sequence(min_sequence);
-        }
-    }
-
-    void WaitForFreeSlotAt(const int64_t& sequence,
-                           const std::vector<Sequence*>& dependent_sequences,
-                           const MutableLong& min_gating_sequence) {
-        const int64_t wrap_point = sequence - buffer_size_;
-        if (wrap_point > min_gating_sequence.sequence()) {
-            int64_t min_sequence;
-            while (wrap_point > (min_sequence = GetMinimumSequence(dependent_sequences))) {
-                std::this_thread::yield();
-            }
-            min_gating_sequence.set_sequence(min_sequence);
-        }
-    }
-
-    int ApplyBackPressure(int counter) {
-        if (0 != counter) {
-            --counter;
-            std::this_thread::yield();
-        } else {
-            std::this_thread::sleep_for(std::chrono::milliseconds(1));
-        }
-
-        return counter;
-    }
-
-    const int buffer_size_;
-    PaddedSequence sequence_;
-    thread_local PaddedLong min_gating_sequence_local_;
-
-    const int retries = 100;
-
-    DISALLOW_COPY_AND_ASSIGN(MultiThreadedStrategy);
+  void SynchronizePublishing(const int64_t& sequence, const Sequence& cursor,
+                             const size_t& delta) {}
 };
 */
 
-ClaimStrategyInterface* CreateClaimStrategy(ClaimStrategyOption option,
-                                            const int& buffer_size) {
-    switch (option) {
-        case kSingleThreadedStrategy:
-            return new SingleThreadedStrategy(buffer_size);
-        // case kMultiThreadedStrategy:
-        //     return new MultiThreadedStrategy(buffer_size);
-        default:
-            return NULL;
+template <size_t N>
+class SingleThreadedStrategy;
+using kDefaultClaimStrategy = SingleThreadedStrategy<kDefaultRingBufferSize>;
+
+// Optimised strategy can be used when there is a single publisher thread.
+template <size_t N = kDefaultRingBufferSize>
+class SingleThreadedStrategy {
+ public:
+  SingleThreadedStrategy()
+      : last_claimed_sequence_(kInitialCursorValue),
+        last_consumer_sequence_(kInitialCursorValue) {}
+
+  int64_t IncrementAndGet(const std::vector<Sequence*>& dependents,
+                          size_t delta = 1) {
+    const int64_t next_sequence = (last_claimed_sequence_ += delta);
+    const int64_t wrap_point = next_sequence - N;
+    if (last_consumer_sequence_ < wrap_point) {
+      while (GetMinimumSequence(dependents) < wrap_point) {
+        std::this_thread::yield();
+      }
     }
+    return next_sequence;
+  }
+
+  bool HasAvalaibleCapacity(const std::vector<Sequence*>& dependents) {
+    const int64_t wrap_point = last_claimed_sequence_ + 1L - N;
+    if (wrap_point > last_consumer_sequence_) {
+      const int64_t min_sequence = GetMinimumSequence(dependents);
+      last_consumer_sequence_ = min_sequence;
+      if (wrap_point > min_sequence) return false;
+    }
+    return true;
+  }
+
+  void SynchronizePublishing(const int64_t& sequence, const Sequence& cursor,
+                             const size_t& delta) {}
+
+ private:
+  // We do not need to use atomic values since this function is called by a
+  // single publisher.
+  int64_t last_claimed_sequence_;
+  int64_t last_consumer_sequence_;
+
+  DISALLOW_COPY_MOVE_AND_ASSIGN(SingleThreadedStrategy);
+};
+
+// Optimised strategy can be used when there is a single publisher thread.
+template <size_t N = kDefaultRingBufferSize>
+class MultiThreadedStrategy {
+ public:
+  MultiThreadedStrategy() {}
+
+  int64_t IncrementAndGet(const std::vector<Sequence*>& dependents,
+                          size_t delta = 1) {
+    const int64_t next_sequence = last_claimed_sequence_.IncrementAndGet(delta);
+    const int64_t wrap_point = next_sequence - N;
+    if (last_consumer_sequence_.sequence() < wrap_point) {
+      while (GetMinimumSequence(dependents) < wrap_point) {
+        std::this_thread::yield();
+      }
+    }
+    return next_sequence;
+  }
+
+  bool HasAvalaibleCapacity(const std::vector<Sequence*>& dependents) {
+    const int64_t wrap_point = last_claimed_sequence_.sequence() + 1L - N;
+    if (wrap_point > last_consumer_sequence_.sequence()) {
+      const int64_t min_sequence = GetMinimumSequence(dependents);
+      last_consumer_sequence_.set_sequence(min_sequence);
+      if (wrap_point > min_sequence) return false;
+    }
+    return true;
+  }
+
+  void SynchronizePublishing(const int64_t& sequence, const Sequence& cursor,
+                             const size_t& delta) {
+    int64_t my_first_sequence = sequence - delta;
+
+    while (cursor.sequence() < my_first_sequence) {
+      // TODO: configurable yield strategy
+      std::this_thread::yield();
+    }
+  }
+
+ private:
+  Sequence last_claimed_sequence_;
+  Sequence last_consumer_sequence_;
+
+  DISALLOW_COPY_MOVE_AND_ASSIGN(MultiThreadedStrategy);
 };
 
 };  // namespace disruptor
 
-#endif // DISRUPTOR_CLAIM_STRATEGY_H_ NOLINT
+#endif  // DISRUPTOR_CLAIM_STRATEGY_H_ NOLINT

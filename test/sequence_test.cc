@@ -23,52 +23,44 @@
 // (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
 // THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
-#ifndef DISRUPTOR_RING_BUFFER_H_  // NOLINT
-#define DISRUPTOR_RING_BUFFER_H_  // NOLINT
+#define BOOST_TEST_DYN_LINK
+#define BOOST_TEST_MODULE SequenceTest
 
-#include <array>
-#include "utils.h"
+#include <atomic>
+#include <iostream>
+
+#include <boost/test/unit_test.hpp>
+
+#include <disruptor/sequence.h>
 
 namespace disruptor {
+namespace test {
 
-constexpr size_t kDefaultRingBufferSize = 1024;
-
-// Ring buffer implemented with a fixed array.
-//
-// @param <T> event type
-// @param <N> size of the ring
-template <typename T, size_t N = kDefaultRingBufferSize>
-class RingBuffer {
- public:
-  // Construct a RingBuffer with the full option set.
-  //
-  // @param event_factory to instance new entries for filling the RingBuffer.
-  // @param buffer_size of the RingBuffer, must be a power of 2.
-  // @param claim_strategy_option threading strategy for publishers claiming
-  // entries in the ring.
-  // @param wait_strategy_option waiting strategy employed by
-  // processors_to_track waiting in entries becoming available.
-  RingBuffer(const std::array<T, N>& events) : events_(events) {}
-
-  static_assert(((N > 0) && ((N & (~N + 1)) == N)),
-                "RingBuffer's size must be a positive power of 2");
-
-  // Get the event for a given sequence in the RingBuffer.
-  //
-  // @param sequence for the event
-  // @return event reference at the specified sequence position.
-  T& operator[](const int64_t& sequence) { return events_[sequence & (N - 1)]; }
-
-  const T& operator[](const int64_t& sequence) const {
-    return events_[sequence & (N - 1)];
-  }
-
- private:
-  std::array<T, N> events_;
-
-  DISALLOW_COPY_MOVE_AND_ASSIGN(RingBuffer);
+struct SequenceFixture {
+  Sequence seq;
 };
 
-};  // namespace disruptor
+BOOST_FIXTURE_TEST_SUITE(SequenceBasic, SequenceFixture)
 
-#endif  // DISRUPTOR_RING_BUFFER_H_ NOLINT
+BOOST_AUTO_TEST_CASE(ShouldStartWithValueInitialized) {
+  BOOST_CHECK_EQUAL(seq.sequence(), kInitialCursorValue);
+
+  seq.set_sequence(2L);
+  BOOST_CHECK_EQUAL(seq.sequence(), 2L);
+
+  BOOST_CHECK_EQUAL(seq.IncrementAndGet(1L), 3L);
+  BOOST_CHECK_EQUAL(seq.IncrementAndGet(2L), 5L);
+}
+
+BOOST_AUTO_TEST_CASE(AtLeastOneCacheLine) {
+  BOOST_CHECK(sizeof(Sequence) >= CACHE_LINE_SIZE_IN_BYTES);
+}
+
+BOOST_AUTO_TEST_CASE(IsCacheLineAligned) {
+  BOOST_CHECK_EQUAL(alignof(Sequence), CACHE_LINE_SIZE_IN_BYTES / 8);
+}
+
+BOOST_AUTO_TEST_SUITE_END()  // BlockingStrategy suite
+
+};  // namepspace test
+};  // namepspace disruptor

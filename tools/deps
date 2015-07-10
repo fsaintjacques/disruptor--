@@ -1,0 +1,35 @@
+#!/usr/bin/env bash
+
+set -o errexit
+set -o nounset
+set -o pipefail
+
+# see https://github.com/travis-ci/travis-build/blob/f6dfcccd4e7eff8a00f40303e350ee2cbe8777dc/examples/build_c.sh
+function travis_retry {
+  local result=0
+  local count=3
+  while [ $count -gt 0 ]; do
+    "$@"
+    result=$?
+    [[ "$result" == "0" ]] && break
+    count=$(($count - 1))
+    echo "Command ($@) failed. Retrying: $((3 - $count))" >&2
+    sleep 1
+  done
+
+  [ $count -eq 0 ] && {
+    echo "Retry failed: $@" >&2
+  }
+
+  return $result
+}
+
+function fetch_cmake {
+  local cmake_url="http://www.cmake.org/files/v3.2/cmake-3.2.3-Linux-x86_64.tar.gz"
+  mkdir -p cmake
+  travis_retry wget --quiet -O - ${cmake_url} | tar --strip-components=1 -xz -C cmake
+  export PATH=${PWD}/cmake/bin:${PATH}
+}
+
+fetch_cmake
+mkdir -p build
