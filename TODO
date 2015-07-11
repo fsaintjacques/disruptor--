@@ -1,7 +1,0 @@
--performance scenarios
--tests units
--stay up to date with LMAX's disruptor API (now 2.6)
-    -WorkerPool
-    -Disruptor Wizard
-    -MultiThreaded ClaimStrategy
--verify that RingBuffer::buffer_size is a power of 2
