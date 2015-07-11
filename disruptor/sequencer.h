@@ -75,9 +75,9 @@ class Sequencer {
 
   // Claim the next batch of sequence numbers for publishing.
   //
-  // @param batch_descriptor to be updated for the batch range.
-  // @return the updated batch_descriptor.
-  int64_t Next(size_t delta = 1) {
+  // @param delta  the requested number of sequences.
+  // @return the maximal claimed sequence
+  int64_t Claim(size_t delta = 1) {
     return claim_strategy_.IncrementAndGet(gating_sequences_, delta);
   }
 
@@ -86,7 +86,7 @@ class Sequencer {
   // @param sequence to be published.
   void Publish(const int64_t& sequence, size_t delta = 1) {
     claim_strategy_.SynchronizePublishing(sequence, cursor_, delta);
-    cursor_.set_sequence(sequence);
+    const int64_t new_cursor = cursor_.IncrementAndGet(delta);
     wait_strategy_.SignalAllWhenBlocking();
   }
 

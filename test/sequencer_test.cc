@@ -43,7 +43,7 @@ struct SequencerFixture {
 
   void FillBuffer() {
     for (int i = 0; i < RING_BUFFER_SIZE; i++) {
-      int64_t sequence = sequencer.Next();
+      int64_t sequence = sequencer.Claim();
       sequencer.Publish(sequence);
     }
   }
