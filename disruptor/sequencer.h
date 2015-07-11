@@ -26,7 +26,6 @@
 #ifndef DISRUPTOR_SEQUENCER_H_  // NOLINT
 #define DISRUPTOR_SEQUENCER_H_  // NOLINT
 
-#include "disruptor/batch_descriptor.h"
 #include "disruptor/claim_strategy.h"
 #include "disruptor/wait_strategy.h"
 #include "disruptor/sequence_barrier.h"
