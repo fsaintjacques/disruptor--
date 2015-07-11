@@ -78,6 +78,7 @@ class SingleThreadedStrategy {
     const int64_t wrap_point = next_sequence - N;
     if (last_consumer_sequence_ < wrap_point) {
       while (GetMinimumSequence(dependents) < wrap_point) {
+        // TODO: configurable yield strategy
         std::this_thread::yield();
       }
     }
@@ -118,6 +119,7 @@ class MultiThreadedStrategy {
     const int64_t wrap_point = next_sequence - N;
     if (last_consumer_sequence_.sequence() < wrap_point) {
       while (GetMinimumSequence(dependents) < wrap_point) {
+        // TODO: configurable yield strategy
         std::this_thread::yield();
       }
     }
