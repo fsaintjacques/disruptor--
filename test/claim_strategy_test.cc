@@ -69,17 +69,17 @@ BOOST_AUTO_TEST_CASE(IncrementAndGet) {
   BOOST_CHECK_EQUAL(return_value, kFirstSequenceValue + delta);
 }
 
-BOOST_AUTO_TEST_CASE(HasAvalaibleCapacity) {
+BOOST_AUTO_TEST_CASE(HasAvailableCapacity) {
   auto one_dependents = oneDependents();
 
   int64_t return_value =
       strategy.IncrementAndGet(one_dependents, RING_BUFFER_SIZE);
   BOOST_CHECK_EQUAL(return_value, kInitialCursorValue + RING_BUFFER_SIZE);
-  BOOST_CHECK_EQUAL(strategy.HasAvalaibleCapacity(one_dependents), false);
+  BOOST_CHECK_EQUAL(strategy.HasAvailableCapacity(one_dependents), false);
 
   // advance late consumers
   sequence_1.IncrementAndGet(1L);
-  BOOST_CHECK_EQUAL(strategy.HasAvalaibleCapacity(one_dependents), true);
+  BOOST_CHECK_EQUAL(strategy.HasAvailableCapacity(one_dependents), true);
 
   // only one slot free
   BOOST_CHECK_EQUAL(strategy.IncrementAndGet(one_dependents),
@@ -133,17 +133,17 @@ BOOST_AUTO_TEST_CASE(DualIncrementAndGet) {
   BOOST_CHECK_EQUAL(return_2, kFirstSequenceValue + 1L);
 }
 
-BOOST_AUTO_TEST_CASE(HasAvalaibleCapacity) {
+BOOST_AUTO_TEST_CASE(HasAvailableCapacity) {
   auto one_dependents = oneDependents();
 
   int64_t return_value =
       strategy.IncrementAndGet(one_dependents, RING_BUFFER_SIZE);
   BOOST_CHECK_EQUAL(return_value, kInitialCursorValue + RING_BUFFER_SIZE);
-  BOOST_CHECK_EQUAL(strategy.HasAvalaibleCapacity(one_dependents), false);
+  BOOST_CHECK_EQUAL(strategy.HasAvailableCapacity(one_dependents), false);
 
   // advance late consumers
   sequence_1.IncrementAndGet(1L);
-  BOOST_CHECK_EQUAL(strategy.HasAvalaibleCapacity(one_dependents), true);
+  BOOST_CHECK_EQUAL(strategy.HasAvailableCapacity(one_dependents), true);
 
   // only one slot free
   BOOST_CHECK_EQUAL(strategy.IncrementAndGet(one_dependents),

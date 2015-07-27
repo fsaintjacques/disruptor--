@@ -53,7 +53,7 @@ class ClaimStrategy {
   // @param dependents  dependents sequences to wait on (mostly consumers).
   //
   // @return last claimed sequence.
-  bool HasAvalaibleCapacity(const std::vector<Sequence*>& dependents);
+  bool HasAvailableCapacity(const std::vector<Sequence*>& dependents);
 
   void SynchronizePublishing(const int64_t& sequence, const Sequence& cursor,
                              const size_t& delta) {}
@@ -85,7 +85,7 @@ class SingleThreadedStrategy {
     return next_sequence;
   }
 
-  bool HasAvalaibleCapacity(const std::vector<Sequence*>& dependents) {
+  bool HasAvailableCapacity(const std::vector<Sequence*>& dependents) {
     const int64_t wrap_point = last_claimed_sequence_ + 1L - N;
     if (wrap_point > last_consumer_sequence_) {
       const int64_t min_sequence = GetMinimumSequence(dependents);
@@ -126,7 +126,7 @@ class MultiThreadedStrategy {
     return next_sequence;
   }
 
-  bool HasAvalaibleCapacity(const std::vector<Sequence*>& dependents) {
+  bool HasAvailableCapacity(const std::vector<Sequence*>& dependents) {
     const int64_t wrap_point = last_claimed_sequence_.sequence() + 1L - N;
     if (wrap_point > last_consumer_sequence_.sequence()) {
       const int64_t min_sequence = GetMinimumSequence(dependents);

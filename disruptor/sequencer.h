@@ -68,8 +68,8 @@ class Sequencer {
   // of available capacity.
   //
   // @return true if the buffer has the capacity to allocated another event.
-  bool HasAvalaibleCapacity() {
-    return claim_strategy_.HasAvalaibleCapacity(gating_sequences_);
+  bool HasAvailableCapacity() {
+    return claim_strategy_.HasAvailableCapacity(gating_sequences_);
   }
 
   // Claim the next batch of sequence numbers for publishing.
