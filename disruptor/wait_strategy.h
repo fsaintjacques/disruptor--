@@ -26,7 +26,9 @@
 #ifndef DISRUPTOR_WAITSTRATEGY_H_  // NOLINT
 #define DISRUPTOR_WAITSTRATEGY_H_  // NOLINT
 
+#ifndef _MSC_VER
 #include <sys/time.h>
+#endif
 
 #include <chrono>
 #include <thread>
