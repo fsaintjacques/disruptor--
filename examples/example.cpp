@@ -40,7 +40,9 @@ size_t delta = 1;
 
 std::array<long, RING_BUFFER_SIZE> events;
 
+// Number of producer threads
 int np = 1;
+// Number of consumer threads
 int nc = 1;
 
 // Ignoring thread safety
@@ -60,7 +62,8 @@ void consume(disruptor::Sequencer<T, N, C, W>& s, disruptor::Sequence& seq) {
        << '\n';
     std::cout << ss.str();*/
 
-    int64_t available_seq = barrier->WaitFor(next_seq);
+    int64_t available_seq =
+        barrier->WaitFor(next_seq, std::chrono::milliseconds(100));
 
     /*ss.clear();
     ss.str() = "";
@@ -122,6 +125,8 @@ void produce(disruptor::Sequencer<T, N, C, W>& s) {
 
 template <typename T, size_t N, typename C, typename W>
 void runOnce() {
+  std::cout << "Staring run " << std::endl;
+
   running = true;
 
   disruptor::Sequence sequences[nc];
@@ -172,17 +177,20 @@ void runOnce() {
   for (int i = 0; i < nc; ++i) tc[i].join();
 }
 
-int main(int argc, char* argv[]) {
+int main(int argc, char **argv) {
   std::cout.imbue(std::locale(""));
 
   args::ArgumentParser parser(
       "This is an example program that demonstrates disruptor-- usage.", "");
   args::HelpFlag help(parser, "help", "Display this help menu", {'h', "help"});
-  args::ValueFlag<int> num_prod(parser, "1", "Number of producers", {"nc"});
-  args::ValueFlag<int> num_cons(parser, "1", "Number of consumers", {"np"});
-  args::ValueFlag<size_t> batch_size(parser, "1", "Batch size", {"delta"});
-  args::ValueFlag<bool> multi(parser, "false", "Multithreaded claim strategy",
-                              {"mt"});
+  args::ValueFlag<int> num_prod(parser, "num_prod", "Number of producers", {"nc"}, np);
+  args::ValueFlag<int> num_cons(parser, "num_cons", "Number of consumers", {"np"}, nc);
+  args::ValueFlag<size_t> batch_size(parser, "batch_size", "Batch size", {"delta"}, delta);
+  args::ValueFlag<bool> multi(parser, "multi", "Multithreaded claim strategy",
+                              {"mt"}, false);
+  args::ValueFlag<size_t> looper(parser, "looper",
+                                 "Number of times loop over the ring buffer.",
+                                 {'l', "loop"}, counter);
 
   try {
     parser.ParseCLI(argc, argv);
@@ -196,6 +204,7 @@ int main(int argc, char* argv[]) {
   }
 
   delta = batch_size.Get();
+  counter = looper.Get();
 
   if (multi.Get()) {
     nc = num_prod.Get();
@@ -225,25 +234,25 @@ int main(int argc, char* argv[]) {
 
   } else {
     runOnce<long, RING_BUFFER_SIZE,
-            disruptor::MultiThreadedStrategy<RING_BUFFER_SIZE>,
+            disruptor::SingleThreadedStrategy<RING_BUFFER_SIZE>,
             disruptor::SleepingStrategy<> >();
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     runOnce<long, RING_BUFFER_SIZE,
-            disruptor::MultiThreadedStrategy<RING_BUFFER_SIZE>,
+            disruptor::SingleThreadedStrategy<RING_BUFFER_SIZE>,
             disruptor::YieldingStrategy<> >();
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     runOnce<long, RING_BUFFER_SIZE,
-            disruptor::MultiThreadedStrategy<RING_BUFFER_SIZE>,
+            disruptor::SingleThreadedStrategy<RING_BUFFER_SIZE>,
             disruptor::BusySpinStrategy>();
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
     runOnce<long, RING_BUFFER_SIZE,
-            disruptor::MultiThreadedStrategy<RING_BUFFER_SIZE>,
+            disruptor::SingleThreadedStrategy<RING_BUFFER_SIZE>,
             disruptor::BlockingStrategy>();
   }
 
