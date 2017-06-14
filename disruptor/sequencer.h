@@ -41,7 +41,7 @@ template <typename T, size_t N = kDefaultRingBufferSize,
 class Sequencer {
  public:
   // Construct a Sequencer with the selected strategies.
-  Sequencer(std::array<T, N> events) : ring_buffer_(events), wait_strategy_(std::make_shared<W>()) {}
+  Sequencer(std::array<T, N> events) : ring_buffer_(events) {}
 
   // Set the sequences that will gate publishers to prevent the buffer
   // wrapping.
@@ -89,10 +89,15 @@ class Sequencer {
   void Publish(const int64_t& sequence, size_t delta = 1) {
     claim_strategy_.SynchronizePublishing(sequence, cursor_, delta);
     const int64_t new_cursor = cursor_.IncrementAndGet(delta);
-    wait_strategy_->SignalAllWhenBlocking();
+    wait_strategy_.SignalAllWhenBlocking();
   }
 
   T& operator[](const int64_t& sequence) { return ring_buffer_[sequence]; }
+
+  const T& operator[](const int64_t& sequence) const
+  {
+    return ring_buffer_[sequence];
+  }
 
  private:
   // Members
@@ -102,7 +107,7 @@ class Sequencer {
 
   C claim_strategy_;
 
-  std::shared_ptr<W> wait_strategy_;
+  W wait_strategy_;
 
   std::vector<Sequence*> gating_sequences_;
 

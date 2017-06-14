@@ -326,12 +326,12 @@ class BlockingStrategy {
   }
 
   void SignalAllWhenBlocking() {
-    std::unique_lock<std::recursive_mutex> ulock(mutex_);
+    std::lock_guard<std::mutex> ulock(mutex_);
     consumer_notify_condition_.notify_all();
   }
 
  private:
-  using Lock = std::unique_lock<std::recursive_mutex>;
+  using Lock = std::unique_lock<std::mutex>;
   using Waiter = std::function<bool(Lock&)>;
 
   inline int64_t WaitFor(const int64_t& sequence, const Sequence& cursor,
@@ -343,7 +343,7 @@ class BlockingStrategy {
     // the sequencer. This is why we need to wait on the cursor first, and
     // then on the dependents.
     if ((available_sequence = cursor.sequence()) < sequence) {
-      std::unique_lock<std::recursive_mutex> ulock(mutex_);
+      std::unique_lock<std::mutex> ulock(mutex_);
       while ((available_sequence = cursor.sequence()) < sequence) {
         if (alerted) return kAlertedSignal;
 
@@ -363,8 +363,8 @@ class BlockingStrategy {
   }
 
   // members
-  std::recursive_mutex mutex_;
-  std::condition_variable_any consumer_notify_condition_;
+  std::mutex mutex_;
+  std::condition_variable consumer_notify_condition_;
 
   DISALLOW_COPY_MOVE_AND_ASSIGN(BlockingStrategy);
 };
