@@ -146,11 +146,12 @@ void runOnce() {
         std::thread(consume<T, N, C, W>, std::ref(s), std::ref(sequences[i]));
 
   std::thread* tp = new std::thread[np];
-  for (int i = 0; i < np; ++i)
-    tp[i] = std::thread(produce<T, N, C, W>, std::ref(s));
 
   struct timeval start_time, end_time;
   gettimeofday(&start_time, NULL);
+
+  for (int i = 0; i < np; ++i)
+    tp[i] = std::thread(produce<T, N, C, W>, std::ref(s));
 
   // std::this_thread::sleep_for(std::chrono::seconds(3));
 
