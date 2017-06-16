@@ -66,14 +66,16 @@ void consume(disruptor::Sequencer<T, N, C, W>& s, disruptor::Sequence& seq) {
         barrier->WaitFor(next_seq, std::chrono::milliseconds(100));
 
     /*ss.clear();
-    ss.str() = "";
+    ss.str(std::string());
     ss << "Available seq: " << available_seq << ' '
        << std::this_thread::get_id() << '\n';
     std::cout << ss.str();*/
 
+    if (available_seq == disruptor::kTimeoutSignal && running == false) break;
+
     if (available_seq <= next_seq) continue;
 
-    for (int i = next_seq; i <= available_seq; ++i) {
+    for (int64_t i = next_seq; i <= available_seq; ++i) {
       const long& ev = s[i];
       // std::cout << i << " Event: " <<ev << '\n';
       sum += ev;
@@ -92,7 +94,7 @@ template <typename T, size_t N, typename C, typename W>
 void produce(disruptor::Sequencer<T, N, C, W>& s) {
   int iterations = counter * RING_BUFFER_SIZE;
 
-  for (int i = 0; i < iterations; ++i) {
+  for (int64_t i = 0; i < iterations; ++i) {
     if (running == false) break;
 
     int64_t sequence = s.Claim(delta);
@@ -111,7 +113,7 @@ void produce(disruptor::Sequencer<T, N, C, W>& s) {
       continue;
     }
 
-    for (int k = sequence; k > sequence - delta; --k) {
+    for (int64_t k = sequence; k > sequence - delta; --k) {
       s[k] = k;
 
       /*std::stringstream ss;
@@ -150,7 +152,9 @@ void runOnce() {
   struct timeval start_time, end_time;
   gettimeofday(&start_time, NULL);
 
-  std::this_thread::sleep_for(std::chrono::seconds(3));
+  // std::this_thread::sleep_for(std::chrono::seconds(3));
+
+  for (int i = 0; i < np; ++i) tp[i].join();
 
   running = false;
 
@@ -172,20 +176,21 @@ void runOnce() {
   std::cout << (cursor * 1.0) / (end - start) << " ops/secs"
             << "\n\n";
 
-  for (int i = 0; i < np; ++i) tp[i].join();
-
   for (int i = 0; i < nc; ++i) tc[i].join();
 }
 
-int main(int argc, char **argv) {
+int main(int argc, char** argv) {
   std::cout.imbue(std::locale(""));
 
   args::ArgumentParser parser(
       "This is an example program that demonstrates disruptor-- usage.", "");
   args::HelpFlag help(parser, "help", "Display this help menu", {'h', "help"});
-  args::ValueFlag<int> num_prod(parser, "num_prod", "Number of producers", {"nc"}, np);
-  args::ValueFlag<int> num_cons(parser, "num_cons", "Number of consumers", {"np"}, nc);
-  args::ValueFlag<size_t> batch_size(parser, "batch_size", "Batch size", {"delta"}, delta);
+  args::ValueFlag<int> num_prod(parser, "num_prod", "Number of producers",
+                                {"nc"}, np);
+  args::ValueFlag<int> num_cons(parser, "num_cons", "Number of consumers",
+                                {"np"}, nc);
+  args::ValueFlag<size_t> batch_size(parser, "batch_size", "Batch size",
+                                     {"delta"}, delta);
   args::ValueFlag<bool> multi(parser, "multi", "Multithreaded claim strategy",
                               {"mt"}, false);
   args::ValueFlag<size_t> looper(parser, "looper",
