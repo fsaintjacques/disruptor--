@@ -48,27 +48,32 @@ class RingBuffer {
   // entries in the ring.
   // @param wait_strategy_option waiting strategy employed by
   // processors_to_track waiting in entries becoming available.
-  RingBuffer(size_t n) : N(n), events_(nullptr) {
-    if (((N < 0) || ((N & (~N + 1)) != N))) {
+  RingBuffer(size_t n = kDefaultRingBufferSize)
+      : index_mask_(n - 1), events_(nullptr) {
+    if (((n < 0) || ((n & (~n + 1)) != n))) {
       throw std::runtime_error(
           "RingBuffer's size must be a positive power of 2");
     }
 
-    events_ = new T[N];
+    events_ = new T[n];
   }
+
+  ~RingBuffer() { delete[] events_; }
 
   // Get the event for a given sequence in the RingBuffer.
   //
   // @param sequence for the event
   // @return event reference at the specified sequence position.
-  T& operator[](const int64_t& sequence) { return events_[sequence & (N - 1)]; }
+  T& operator[](const int64_t& sequence) {
+    return events_[sequence & index_mask_];
+  }
 
   const T& operator[](const int64_t& sequence) const {
-    return events_[sequence & (N - 1)];
+    return events_[sequence & index_mask_];
   }
 
  private:
-  size_t N;
+  int index_mask_;
   T* events_;
 
   DISALLOW_COPY_MOVE_AND_ASSIGN(RingBuffer);

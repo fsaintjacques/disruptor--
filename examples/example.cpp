@@ -31,7 +31,7 @@ std::string demangle(const char* name) { return name; }
 
 size_t RING_BUFFER_SIZE = 2048;
 
-// Do not care about thread safety here.
+// Not handled in a thread safe way
 unsigned long sum = 0;
 // Number of times to loop over buffer in a producer thread
 size_t counter = 100000;
@@ -43,7 +43,7 @@ int np = 1;
 // Number of consumer threads
 int nc = 1;
 
-// Ignoring thread safety
+// Not handled in a thread safe way
 bool running = true;
 
 // Consume published data
@@ -54,34 +54,66 @@ void consume(disruptor::Sequencer<T, C, W>& s, disruptor::Sequence& seq) {
 
   int64_t next_seq = disruptor::kFirstSequenceValue;
 
+  int exitCtr = 0;
+
   while (running) {
-    /*std::stringstream ss;
+#ifdef PRINT_DEBUG_CONS
+    std::stringstream ss;
     ss << "Wait for next seq: " << next_seq << ' ' << std::this_thread::get_id()
        << '\n';
-    std::cout << ss.str();*/
+    std::cout << ss.str();
+#endif
 
     int64_t available_seq =
-        barrier->WaitFor(next_seq, std::chrono::milliseconds(100));
+        barrier->WaitFor(next_seq, std::chrono::microseconds(10000));
 
-    /*ss.clear();
+#ifdef PRINT_DEBUG_CONS
+    ss.clear();
     ss.str(std::string());
     ss << "Available seq: " << available_seq << ' '
        << std::this_thread::get_id() << '\n';
-    std::cout << ss.str();*/
+    std::cout << ss.str();
+#endif
 
     if (available_seq == disruptor::kTimeoutSignal && running == false) break;
 
-    if (available_seq <= next_seq) continue;
+    if (available_seq < next_seq) continue;
+
+    // Only required for claim strategy MultiThreadedStrategyEx as it changes
+    // the cursor.
+    available_seq = s.GetHighestPublishedSequence(next_seq, available_seq);
+    if (available_seq < next_seq) {
+      ++exitCtr;
+
+#ifdef PRINT_DEBUG_CONS
+      ss.clear();
+      ss.str(std::string());
+      ss << "Highest published seq: " << available_seq << ' '
+         << std::this_thread::get_id() << '\n';
+      std::cout << ss.str();
+
+      if (exitCtr > 50)
+        break;
+#endif
+      // Otherwise goes into a busy loop with blocking strategy
+      if (exitCtr > 10)
+        std::this_thread::sleep_for(std::chrono::microseconds(1));
+      continue;
+    }
 
     for (int64_t i = next_seq; i <= available_seq; ++i) {
       const long& ev = s[i];
-      // std::cout << i << " Event: " <<ev << '\n';
+#ifdef PRINT_DEBUG_CONS
+      std::cout << i << " Event: " << ev << '\n';
+#endif
       sum += ev;
     }
 
     seq.set_sequence(available_seq);
 
     next_seq = available_seq + 1;
+
+    exitCtr = 0;
   }
 
   barrier->set_alerted(true);
@@ -100,11 +132,12 @@ void produce(disruptor::Sequencer<T, C, W>& s) {
     if (sequence < delta) {
       for (int k = 0; k <= sequence; ++k) {
         s[k] = k;
-
-        /*std::stringstream ss;
+#ifdef PRINT_DEBUG_PROD
+        std::stringstream ss;
         ss << "Publish seq: " << (k) << ' ' << std::this_thread::get_id()
            << '\n';
-        std::cout << ss.str();*/
+        std::cout << ss.str();
+#endif
       }
 
       s.Publish(sequence, delta);
@@ -114,9 +147,11 @@ void produce(disruptor::Sequencer<T, C, W>& s) {
     for (int64_t k = sequence; k > sequence - delta; --k) {
       s[k] = k;
 
-      /*std::stringstream ss;
+#ifdef PRINT_DEBUG_PROD
+      std::stringstream ss;
       ss << "Publish seq: " << (k) << ' ' << std::this_thread::get_id() << '\n';
-      std::cout << ss.str();*/
+      std::cout << ss.str();
+#endif
     }
 
     s.Publish(sequence, delta);
@@ -140,8 +175,7 @@ void runOnce() {
 
   std::thread* tc = new std::thread[nc];
   for (int i = 0; i < nc; ++i)
-    tc[i] =
-        std::thread(consume<T, C, W>, std::ref(s), std::ref(sequences[i]));
+    tc[i] = std::thread(consume<T, C, W>, std::ref(s), std::ref(sequences[i]));
 
   std::thread* tp = new std::thread[np];
 
@@ -154,8 +188,8 @@ void runOnce() {
   // std::this_thread::sleep_for(std::chrono::seconds(3));
 
   for (int i = 0; i < np; ++i) tp[i].join();
-
   running = false;
+  for (int i = 0; i < nc; ++i) tc[i].join();
 
   int64_t cursor = s.GetCursor();
   unsigned long snapSum = sum;
@@ -175,8 +209,6 @@ void runOnce() {
             << demangle(typeid(W).name()) << '\n';
   std::cout << (cursor * 1.0) / (end - start) << " ops/secs"
             << "\n\n";
-
-  for (int i = 0; i < nc; ++i) tc[i].join();
 }
 
 int main(int argc, char** argv) {
@@ -191,8 +223,9 @@ int main(int argc, char** argv) {
                                 {"nc"}, nc);
   args::ValueFlag<size_t> batch_size(parser, "batch_size", "Batch size",
                                      {"delta"}, delta);
-  args::ValueFlag<bool> multi(parser, "multi", "Multithreaded claim strategy",
-                              {"mt"}, false);
+  args::ValueFlag<int> multi(parser, "multi",
+                             "Multithreaded claim strategy (1 old, 2 new)",
+                             {"mt"}, false);
   args::ValueFlag<size_t> looper(parser, "looper",
                                  "Number of times loop over the ring buffer.",
                                  {'l', "loop"}, counter);
@@ -215,45 +248,69 @@ int main(int argc, char** argv) {
   nc = num_cons.Get();
   RING_BUFFER_SIZE = ring_buffer_size.Get();
 
-  if (multi.Get()) {
-    np = num_prod.Get();
-
-    runOnce<long, disruptor::MultiThreadedStrategy,
+  if (multi.Get() == 0) {
+    runOnce<long, disruptor::SingleThreadedStrategy,
             disruptor::SleepingStrategy<> >();
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    runOnce<long, disruptor::MultiThreadedStrategy,
+    runOnce<long, disruptor::SingleThreadedStrategy,
             disruptor::YieldingStrategy<> >();
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    runOnce<long, disruptor::MultiThreadedStrategy,
+    runOnce<long, disruptor::SingleThreadedStrategy,
             disruptor::BusySpinStrategy>();
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    runOnce<long, disruptor::MultiThreadedStrategy,
+    runOnce<long, disruptor::SingleThreadedStrategy,
             disruptor::BlockingStrategy>();
 
   } else {
-    runOnce<long, disruptor::SingleThreadedStrategy,
-            disruptor::SleepingStrategy<> >();
+    np = num_prod.Get();
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+    switch (multi.Get()) {
+      case 1: {
+        runOnce<long, disruptor::MultiThreadedStrategy,
+                disruptor::SleepingStrategy<> >();
 
-    runOnce<long, disruptor::SingleThreadedStrategy,
-            disruptor::YieldingStrategy<> >();
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        runOnce<long, disruptor::MultiThreadedStrategy,
+                disruptor::YieldingStrategy<> >();
 
-    runOnce<long, disruptor::SingleThreadedStrategy,
-            disruptor::BusySpinStrategy>();
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        runOnce<long, disruptor::MultiThreadedStrategy,
+                disruptor::BusySpinStrategy>();
 
-    runOnce<long, disruptor::SingleThreadedStrategy,
-            disruptor::BlockingStrategy>();
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+        runOnce<long, disruptor::MultiThreadedStrategy,
+                disruptor::BlockingStrategy>();
+      } break;
+
+      case 2: {
+        runOnce<long, disruptor::MultiThreadedStrategyEx,
+                disruptor::SleepingStrategy<> >();
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+        runOnce<long, disruptor::MultiThreadedStrategyEx,
+                disruptor::YieldingStrategy<> >();
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+        runOnce<long, disruptor::MultiThreadedStrategyEx,
+                disruptor::BusySpinStrategy>();
+
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+        runOnce<long, disruptor::MultiThreadedStrategyEx,
+                disruptor::BlockingStrategy>();
+      } break;
+    }
   }
 
   return 0;

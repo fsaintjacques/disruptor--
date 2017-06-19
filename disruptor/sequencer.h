@@ -77,12 +77,18 @@ class Sequencer {
     return claim_strategy_.HasAvailableCapacity(gating_sequences_);
   }
 
+  int64_t GetHighestPublishedSequence(int64_t lowerBound,
+                                      int64_t availableSequence) {
+    return claim_strategy_.GetHighestPublishedSequence(lowerBound,
+                                                       availableSequence);
+  }
+
   // Claim the next batch of sequence numbers for publishing.
   //
   // @param delta  the requested number of sequences.
   // @return the maximal claimed sequence
   int64_t Claim(size_t delta = 1) {
-    return claim_strategy_.IncrementAndGet(gating_sequences_, delta);
+    return claim_strategy_.IncrementAndGet(cursor_, gating_sequences_, delta);
   }
 
   // Publish an event and make it visible to {@link EventProcessor}s.
@@ -90,8 +96,7 @@ class Sequencer {
   // @param sequence to be published.
   void Publish(const int64_t& sequence, size_t delta = 1) {
     claim_strategy_.SynchronizePublishing(sequence, cursor_, delta);
-    //const int64_t new_cursor = cursor_.IncrementAndGet(delta);
-    cursor_.set_sequence(sequence);
+    // const int64_t new_cursor = cursor_.IncrementAndGet(delta);
     wait_strategy_.SignalAllWhenBlocking();
   }
 
