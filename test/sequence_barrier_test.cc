@@ -34,8 +34,10 @@
 namespace disruptor {
 namespace test {
 
+kDefaultWaitStrategy  wait_strategy;
+
 struct SequenceBarrierFixture {
-  SequenceBarrierFixture() : barrier(cursor, dependents) {}
+  SequenceBarrierFixture() : barrier(wait_strategy, cursor, dependents) {}
 
   Sequence cursor;
   Sequence sequence_1;

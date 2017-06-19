@@ -36,6 +36,7 @@ namespace test {
 
 template <typename S>
 struct ClaimStrategyFixture {
+  ClaimStrategyFixture() : strategy(RING_BUFFER_SIZE) {}
   Sequence cursor;
   Sequence sequence_1;
   Sequence sequence_2;
@@ -56,16 +57,15 @@ struct ClaimStrategyFixture {
 
 const int64_t kFirstSequenceValue = kInitialCursorValue + 1L;
 
-using SingleThreadedFixture =
-    ClaimStrategyFixture<SingleThreadedStrategy<RING_BUFFER_SIZE>>;
+using SingleThreadedFixture = ClaimStrategyFixture<SingleThreadedStrategy>;
 BOOST_FIXTURE_TEST_SUITE(SingleThreadedStrategy, SingleThreadedFixture)
 
 BOOST_AUTO_TEST_CASE(IncrementAndGet) {
-  int64_t return_value = strategy.IncrementAndGet(empty_dependents);
+  int64_t return_value = strategy.IncrementAndGet(cursor, empty_dependents);
   BOOST_CHECK_EQUAL(return_value, kFirstSequenceValue);
 
   const size_t delta = 10;
-  return_value = strategy.IncrementAndGet(empty_dependents, delta);
+  return_value = strategy.IncrementAndGet(cursor, empty_dependents, delta);
   BOOST_CHECK_EQUAL(return_value, kFirstSequenceValue + delta);
 }
 
@@ -73,36 +73,38 @@ BOOST_AUTO_TEST_CASE(HasAvailableCapacity) {
   auto one_dependents = oneDependents();
 
   int64_t return_value =
-      strategy.IncrementAndGet(one_dependents, RING_BUFFER_SIZE);
+      strategy.IncrementAndGet(cursor, one_dependents, RING_BUFFER_SIZE);
   BOOST_CHECK_EQUAL(return_value, kInitialCursorValue + RING_BUFFER_SIZE);
-  BOOST_CHECK_EQUAL(strategy.HasAvailableCapacity(one_dependents), false);
+  BOOST_CHECK_EQUAL(
+      strategy.HasAvailableCapacity(one_dependents, cursor.sequence()), false);
 
   // advance late consumers
   sequence_1.IncrementAndGet(1L);
-  BOOST_CHECK_EQUAL(strategy.HasAvailableCapacity(one_dependents), true);
+  BOOST_CHECK_EQUAL(
+      strategy.HasAvailableCapacity(one_dependents, cursor.sequence()), true);
 
   // only one slot free
-  BOOST_CHECK_EQUAL(strategy.IncrementAndGet(one_dependents),
+  BOOST_CHECK_EQUAL(strategy.IncrementAndGet(cursor, one_dependents),
                     return_value + 1L);
 
   // dependent keeps up
   sequence_1.IncrementAndGet(RING_BUFFER_SIZE);
 
   // all equals
-  BOOST_CHECK_EQUAL(strategy.IncrementAndGet(one_dependents, RING_BUFFER_SIZE),
-                    sequence_1.IncrementAndGet(RING_BUFFER_SIZE));
+  BOOST_CHECK_EQUAL(
+      strategy.IncrementAndGet(cursor, one_dependents, RING_BUFFER_SIZE),
+      sequence_1.IncrementAndGet(RING_BUFFER_SIZE));
 }
 
 BOOST_AUTO_TEST_SUITE_END()
 
-using MultiThreadedFixture =
-    ClaimStrategyFixture<MultiThreadedStrategy<RING_BUFFER_SIZE>>;
+using MultiThreadedFixture = ClaimStrategyFixture<MultiThreadedStrategy>;
 BOOST_FIXTURE_TEST_SUITE(MultiThreadedStrategy, MultiThreadedFixture)
 
 BOOST_AUTO_TEST_CASE(SingleIncrementAndGet) {
   std::atomic<int64_t> return_value(kInitialCursorValue);
   std::thread([this, &return_value]() {
-    return_value.store(strategy.IncrementAndGet(empty_dependents));
+    return_value.store(strategy.IncrementAndGet(cursor, empty_dependents));
   }).join();
   BOOST_CHECK_EQUAL(return_value, kFirstSequenceValue);
 }
@@ -110,17 +112,18 @@ BOOST_AUTO_TEST_CASE(SingleIncrementAndGet) {
 BOOST_AUTO_TEST_CASE(DualIncrementAndGet) {
   std::atomic<int64_t> return_1, return_2 = {kInitialCursorValue};
   std::atomic<bool> wait_1, wait_2 = {true};
+  Sequence cursor;
 
-  std::thread publisher_1([this, &return_1, &wait_1]() {
+  std::thread publisher_1([this, &cursor, &return_1, &wait_1]() {
     while (wait_1)
       ;
-    return_1 = strategy.IncrementAndGet(empty_dependents);
+    return_1 = strategy.IncrementAndGet(cursor, empty_dependents);
   });
 
-  std::thread publisher_2([this, &return_2, &wait_2]() {
+  std::thread publisher_2([this, &cursor, &return_2, &wait_2]() {
     while (wait_2)
       ;
-    return_2 = strategy.IncrementAndGet(empty_dependents);
+    return_2 = strategy.IncrementAndGet(cursor, empty_dependents);
   });
 
   wait_1 = false;
@@ -135,38 +138,41 @@ BOOST_AUTO_TEST_CASE(DualIncrementAndGet) {
 
 BOOST_AUTO_TEST_CASE(HasAvailableCapacity) {
   auto one_dependents = oneDependents();
+  Sequence cursor;
 
   int64_t return_value =
-      strategy.IncrementAndGet(one_dependents, RING_BUFFER_SIZE);
+      strategy.IncrementAndGet(cursor, one_dependents, RING_BUFFER_SIZE);
   BOOST_CHECK_EQUAL(return_value, kInitialCursorValue + RING_BUFFER_SIZE);
-  BOOST_CHECK_EQUAL(strategy.HasAvailableCapacity(one_dependents), false);
+  BOOST_CHECK_EQUAL(
+      strategy.HasAvailableCapacity(one_dependents, cursor.sequence()), false);
 
   // advance late consumers
   sequence_1.IncrementAndGet(1L);
-  BOOST_CHECK_EQUAL(strategy.HasAvailableCapacity(one_dependents), true);
+  BOOST_CHECK_EQUAL(
+      strategy.HasAvailableCapacity(one_dependents, cursor.sequence()), true);
 
   // only one slot free
-  BOOST_CHECK_EQUAL(strategy.IncrementAndGet(one_dependents),
+  BOOST_CHECK_EQUAL(strategy.IncrementAndGet(cursor, one_dependents),
                     return_value + 1L);
 
   // dependent keeps up
   sequence_1.IncrementAndGet(RING_BUFFER_SIZE);
 
   // all equals
-  BOOST_CHECK_EQUAL(strategy.IncrementAndGet(one_dependents, RING_BUFFER_SIZE),
-                    sequence_1.IncrementAndGet(RING_BUFFER_SIZE));
+  BOOST_CHECK_EQUAL(
+      strategy.IncrementAndGet(cursor, one_dependents, RING_BUFFER_SIZE),
+      sequence_1.IncrementAndGet(RING_BUFFER_SIZE));
 }
 
 BOOST_AUTO_TEST_CASE(SynchronizePublishingShouldBlockEagerThreads) {
   std::atomic<bool> running_1(true), running_2(true), running_3(true);
   std::atomic<bool> wait_1(true), wait_2(true), wait_3(true);
   Sequence claimed_1, claimed_2, claimed_3;
-  Sequence cursor;
 
-  std::thread publisher_1([this, &claimed_1, &cursor, &running_1, &wait_1]() {
+  std::thread publisher_1([this, &claimed_1, &running_1, &wait_1]() {
     while (wait_1)
       ;
-    claimed_1.set_sequence(strategy.IncrementAndGet(empty_dependents));
+    claimed_1.set_sequence(strategy.IncrementAndGet(cursor, empty_dependents));
     wait_1 = true;
     while (wait_1)
       ;
@@ -174,10 +180,10 @@ BOOST_AUTO_TEST_CASE(SynchronizePublishingShouldBlockEagerThreads) {
     running_1 = false;
   });
 
-  std::thread publisher_2([this, &claimed_2, &cursor, &running_2, &wait_2]() {
+  std::thread publisher_2([this, &claimed_2, &running_2, &wait_2]() {
     while (wait_2)
       ;
-    claimed_2.set_sequence(strategy.IncrementAndGet(empty_dependents));
+    claimed_2.set_sequence(strategy.IncrementAndGet(cursor, empty_dependents));
     wait_2 = true;
     while (wait_2)
       ;
@@ -185,10 +191,10 @@ BOOST_AUTO_TEST_CASE(SynchronizePublishingShouldBlockEagerThreads) {
     running_2 = false;
   });
 
-  std::thread publisher_3([this, &claimed_3, &cursor, &running_3, &wait_3]() {
+  std::thread publisher_3([this, &claimed_3, &running_3, &wait_3]() {
     while (wait_3)
       ;
-    claimed_3.set_sequence(strategy.IncrementAndGet(empty_dependents));
+    claimed_3.set_sequence(strategy.IncrementAndGet(cursor, empty_dependents));
     wait_3 = true;
     while (wait_3)
       ;
@@ -220,7 +226,7 @@ BOOST_AUTO_TEST_CASE(SynchronizePublishingShouldBlockEagerThreads) {
   BOOST_CHECK_EQUAL(claimed_2.sequence(), kFirstSequenceValue + 1);
   BOOST_CHECK_EQUAL(claimed_3.sequence(), kFirstSequenceValue + 2);
 
-  // publisher 2 and 3 continue running but must wait on publisher 3 to
+  // publisher 2 and 3 continue running but must wait on publisher 1 to
   // publish
   wait_3 = false;
   wait_2 = false;
@@ -230,19 +236,7 @@ BOOST_AUTO_TEST_CASE(SynchronizePublishingShouldBlockEagerThreads) {
   // publisher_1 publish his sequence
   wait_1 = false;
   publisher_1.join();
-  BOOST_CHECK(running_2);
-  BOOST_CHECK(running_3);
-
-  // sequencer commit the cursor
-  cursor.IncrementAndGet(1);
-
-  // publisher_2 is now free to run
   publisher_2.join();
-  // publisher_3 is still locked
-  BOOST_CHECK(running_3);
-
-  // sequencer commit the cursor once more
-  cursor.IncrementAndGet(1);
   publisher_3.join();
 }
 

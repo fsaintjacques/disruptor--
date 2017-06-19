@@ -4,4 +4,7 @@ disruptor--
 
 C++ implementation of LMAX's disruptor pattern.
 
-Currently only examples will build.
+Example can be run with something like (./example -h to see available options):
+
+./example_bin --np 1 --nc 1 --mt 0 --bs 5 -l 1000 --rb 65536
+

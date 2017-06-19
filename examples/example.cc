@@ -222,7 +222,7 @@ int main(int argc, char** argv) {
   args::ValueFlag<int> num_cons(parser, "num_cons", "Number of consumers",
                                 {"nc"}, nc);
   args::ValueFlag<size_t> batch_size(parser, "batch_size", "Batch size",
-                                     {"delta"}, delta);
+                                     {"bs"}, delta);
   args::ValueFlag<int> multi(parser, "multi",
                              "Multithreaded claim strategy (1 old, 2 new)",
                              {"mt"}, false);

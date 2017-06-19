@@ -31,6 +31,22 @@ project(disruptor VERSION ${SEMVER_VERSION} LANGUAGES CXX)
 
 set(CMAKE_CXX_STANDARD 11)
 
+# Set a default build type for single-configuration
+# CMake generators if no build type is set.
+IF(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
+   SET(CMAKE_BUILD_TYPE RelWithDebInfo)
+ENDIF(NOT CMAKE_CONFIGURATION_TYPES AND NOT CMAKE_BUILD_TYPE)
+
+# Select flags.
+if( CMAKE_COMPILER_IS_GNUCXX )
+
+SET(CMAKE_CXX_FLAGS "-Wall -pthread")
+SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g")
+SET(CMAKE_CXX_FLAGS_RELEASE "-O3")
+SET(CMAKE_CXX_FLAGS_DEBUG  "-O0 -g")
+
+endif()
+
 add_library(disruptor INTERFACE)
 include_directories("${PROJECT_SOURCE_DIR}")
 
@@ -62,6 +78,9 @@ endif()
 
 # tests
 enable_testing()
+
+add_executable(example_bin examples/example.cc)
+target_link_libraries(example_bin)
 
 add_executable(sequence_test_bin test/sequence_test.cc)
 target_link_libraries(sequence_test_bin ${Boost_LIBRARIES})
