@@ -29,7 +29,7 @@ std::string demangle(const char* name) { return name; }
 
 #endif  // _GNUG_
 
-const size_t RING_BUFFER_SIZE = 2048;
+size_t RING_BUFFER_SIZE = 2048;
 
 // Do not care about thread safety here.
 unsigned long sum = 0;
@@ -37,8 +37,6 @@ unsigned long sum = 0;
 size_t counter = 100000;
 // Batch size
 size_t delta = 1;
-
-std::array<long, RING_BUFFER_SIZE> events;
 
 // Number of producer threads
 int np = 1;
@@ -49,8 +47,8 @@ int nc = 1;
 bool running = true;
 
 // Consume published data
-template <typename T, size_t N, typename C, typename W>
-void consume(disruptor::Sequencer<T, N, C, W>& s, disruptor::Sequence& seq) {
+template <typename T, typename C, typename W>
+void consume(disruptor::Sequencer<T, C, W>& s, disruptor::Sequence& seq) {
   std::vector<disruptor::Sequence*> depseqs;
   auto barrier = s.NewBarrier(depseqs);
 
@@ -90,8 +88,8 @@ void consume(disruptor::Sequencer<T, N, C, W>& s, disruptor::Sequence& seq) {
 }
 
 // Publish data
-template <typename T, size_t N, typename C, typename W>
-void produce(disruptor::Sequencer<T, N, C, W>& s) {
+template <typename T, typename C, typename W>
+void produce(disruptor::Sequencer<T, C, W>& s) {
   int iterations = counter * RING_BUFFER_SIZE;
 
   for (int64_t i = 0; i < iterations; ++i) {
@@ -125,7 +123,7 @@ void produce(disruptor::Sequencer<T, N, C, W>& s) {
   }
 }
 
-template <typename T, size_t N, typename C, typename W>
+template <typename T, typename C, typename W>
 void runOnce() {
   std::cout << "Staring run " << std::endl;
 
@@ -134,7 +132,7 @@ void runOnce() {
   disruptor::Sequence sequences[nc];
 
   std::vector<disruptor::Sequence*> seqs;
-  disruptor::Sequencer<T, N, C, W> s(events);
+  disruptor::Sequencer<T, C, W> s(RING_BUFFER_SIZE);
 
   for (int i = 0; i < nc; ++i) seqs.push_back(&sequences[i]);
 
@@ -143,7 +141,7 @@ void runOnce() {
   std::thread* tc = new std::thread[nc];
   for (int i = 0; i < nc; ++i)
     tc[i] =
-        std::thread(consume<T, N, C, W>, std::ref(s), std::ref(sequences[i]));
+        std::thread(consume<T, C, W>, std::ref(s), std::ref(sequences[i]));
 
   std::thread* tp = new std::thread[np];
 
@@ -151,7 +149,7 @@ void runOnce() {
   gettimeofday(&start_time, NULL);
 
   for (int i = 0; i < np; ++i)
-    tp[i] = std::thread(produce<T, N, C, W>, std::ref(s));
+    tp[i] = std::thread(produce<T, C, W>, std::ref(s));
 
   // std::this_thread::sleep_for(std::chrono::seconds(3));
 
@@ -161,7 +159,8 @@ void runOnce() {
 
   int64_t cursor = s.GetCursor();
   unsigned long snapSum = sum;
-  std::cout << "\nBatch size: " << delta << '\n';
+  std::cout << "\nBatch size: " << delta
+            << " Ring buffer size: " << RING_BUFFER_SIZE << '\n';
   std::cout << "Cursor: " << cursor << '\n';
   std::cout << "Sum: " << snapSum << '\n';
 
@@ -187,9 +186,9 @@ int main(int argc, char** argv) {
       "This is an example program that demonstrates disruptor-- usage.", "");
   args::HelpFlag help(parser, "help", "Display this help menu", {'h', "help"});
   args::ValueFlag<int> num_prod(parser, "num_prod", "Number of producers",
-                                {"nc"}, np);
+                                {"np"}, np);
   args::ValueFlag<int> num_cons(parser, "num_cons", "Number of consumers",
-                                {"np"}, nc);
+                                {"nc"}, nc);
   args::ValueFlag<size_t> batch_size(parser, "batch_size", "Batch size",
                                      {"delta"}, delta);
   args::ValueFlag<bool> multi(parser, "multi", "Multithreaded claim strategy",
@@ -197,6 +196,8 @@ int main(int argc, char** argv) {
   args::ValueFlag<size_t> looper(parser, "looper",
                                  "Number of times loop over the ring buffer.",
                                  {'l', "loop"}, counter);
+  args::ValueFlag<size_t> ring_buffer_size(
+      parser, "ring_buffer_size", "Ring buffer size", {"rb"}, RING_BUFFER_SIZE);
 
   try {
     parser.ParseCLI(argc, argv);
@@ -211,54 +212,47 @@ int main(int argc, char** argv) {
 
   delta = batch_size.Get();
   counter = looper.Get();
+  nc = num_cons.Get();
+  RING_BUFFER_SIZE = ring_buffer_size.Get();
 
   if (multi.Get()) {
-    nc = num_prod.Get();
-    np = num_cons.Get();
+    np = num_prod.Get();
 
-    runOnce<long, RING_BUFFER_SIZE,
-            disruptor::MultiThreadedStrategy<RING_BUFFER_SIZE>,
+    runOnce<long, disruptor::MultiThreadedStrategy,
             disruptor::SleepingStrategy<> >();
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    runOnce<long, RING_BUFFER_SIZE,
-            disruptor::MultiThreadedStrategy<RING_BUFFER_SIZE>,
+    runOnce<long, disruptor::MultiThreadedStrategy,
             disruptor::YieldingStrategy<> >();
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    runOnce<long, RING_BUFFER_SIZE,
-            disruptor::MultiThreadedStrategy<RING_BUFFER_SIZE>,
+    runOnce<long, disruptor::MultiThreadedStrategy,
             disruptor::BusySpinStrategy>();
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    runOnce<long, RING_BUFFER_SIZE,
-            disruptor::MultiThreadedStrategy<RING_BUFFER_SIZE>,
+    runOnce<long, disruptor::MultiThreadedStrategy,
             disruptor::BlockingStrategy>();
 
   } else {
-    runOnce<long, RING_BUFFER_SIZE,
-            disruptor::SingleThreadedStrategy<RING_BUFFER_SIZE>,
+    runOnce<long, disruptor::SingleThreadedStrategy,
             disruptor::SleepingStrategy<> >();
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    runOnce<long, RING_BUFFER_SIZE,
-            disruptor::SingleThreadedStrategy<RING_BUFFER_SIZE>,
+    runOnce<long, disruptor::SingleThreadedStrategy,
             disruptor::YieldingStrategy<> >();
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    runOnce<long, RING_BUFFER_SIZE,
-            disruptor::SingleThreadedStrategy<RING_BUFFER_SIZE>,
+    runOnce<long, disruptor::SingleThreadedStrategy,
             disruptor::BusySpinStrategy>();
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    runOnce<long, RING_BUFFER_SIZE,
-            disruptor::SingleThreadedStrategy<RING_BUFFER_SIZE>,
+    runOnce<long, disruptor::SingleThreadedStrategy,
             disruptor::BlockingStrategy>();
   }
 

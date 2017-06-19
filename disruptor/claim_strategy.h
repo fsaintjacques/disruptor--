@@ -28,8 +28,8 @@
 
 #include <thread>
 
-#include "disruptor/sequence.h"
 #include "disruptor/ring_buffer.h"
+#include "disruptor/sequence.h"
 
 namespace disruptor {
 
@@ -60,16 +60,15 @@ class ClaimStrategy {
 };
 */
 
-template <size_t N>
 class SingleThreadedStrategy;
-using kDefaultClaimStrategy = SingleThreadedStrategy<kDefaultRingBufferSize>;
+using kDefaultClaimStrategy = SingleThreadedStrategy;
 
 // Optimised strategy can be used when there is a single publisher thread.
-template <size_t N = kDefaultRingBufferSize>
 class SingleThreadedStrategy {
  public:
-  SingleThreadedStrategy()
-      : last_claimed_sequence_(kInitialCursorValue),
+  SingleThreadedStrategy(size_t n)
+      : N(n),
+        last_claimed_sequence_(kInitialCursorValue),
         last_consumer_sequence_(kInitialCursorValue) {}
 
   int64_t IncrementAndGet(const std::vector<Sequence*>& dependents,
@@ -101,6 +100,7 @@ class SingleThreadedStrategy {
  private:
   // We do not need to use atomic values since this function is called by a
   // single publisher.
+  size_t N;
   int64_t last_claimed_sequence_;
   int64_t last_consumer_sequence_;
 
@@ -108,10 +108,9 @@ class SingleThreadedStrategy {
 };
 
 // Optimised strategy can be used when there is a single publisher thread.
-template <size_t N = kDefaultRingBufferSize>
 class MultiThreadedStrategy {
  public:
-  MultiThreadedStrategy() {}
+  MultiThreadedStrategy(size_t n) : N(n) {}
 
   int64_t IncrementAndGet(const std::vector<Sequence*>& dependents,
                           size_t delta = 1) {
@@ -147,6 +146,7 @@ class MultiThreadedStrategy {
   }
 
  private:
+  size_t N;
   Sequence last_claimed_sequence_;
   Sequence last_consumer_sequence_;
 

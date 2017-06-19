@@ -26,18 +26,18 @@
 #ifndef DISRUPTOR_RING_BUFFER_H_  // NOLINT
 #define DISRUPTOR_RING_BUFFER_H_  // NOLINT
 
-#include <array>
 #include "utils.h"
+#include <array>
 
 namespace disruptor {
 
-constexpr size_t kDefaultRingBufferSize = 1024;
+size_t kDefaultRingBufferSize = 1024;
 
 // Ring buffer implemented with a fixed array.
 //
 // @param <T> event type
 // @param <N> size of the ring
-template <typename T, size_t N = kDefaultRingBufferSize>
+template <typename T>
 class RingBuffer {
  public:
   // Construct a RingBuffer with the full option set.
@@ -48,10 +48,14 @@ class RingBuffer {
   // entries in the ring.
   // @param wait_strategy_option waiting strategy employed by
   // processors_to_track waiting in entries becoming available.
-  RingBuffer(const std::array<T, N>& events) : events_(events) {}
+  RingBuffer(size_t n) : N(n), events_(nullptr) {
+    if (((N < 0) || ((N & (~N + 1)) != N))) {
+      throw std::runtime_error(
+          "RingBuffer's size must be a positive power of 2");
+    }
 
-  static_assert(((N > 0) && ((N & (~N + 1)) == N)),
-                "RingBuffer's size must be a positive power of 2");
+    events_ = new T[N];
+  }
 
   // Get the event for a given sequence in the RingBuffer.
   //
@@ -64,7 +68,8 @@ class RingBuffer {
   }
 
  private:
-  std::array<T, N> events_;
+  size_t N;
+  T* events_;
 
   DISALLOW_COPY_MOVE_AND_ASSIGN(RingBuffer);
 };
