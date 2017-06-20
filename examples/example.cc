@@ -5,6 +5,7 @@
 #include <thread>
 #include <typeinfo>
 #include <vector>
+#include <chrono>
 
 #include "args.hxx"
 
@@ -164,7 +165,7 @@ void runOnce() {
 
   running = true;
 
-  disruptor::Sequence sequences[nc];
+  disruptor::Sequence * sequences = new disruptor::Sequence[nc];
 
   std::vector<disruptor::Sequence*> seqs;
   disruptor::Sequencer<T, C, W> s(RING_BUFFER_SIZE);
@@ -179,8 +180,7 @@ void runOnce() {
 
   std::thread* tp = new std::thread[np];
 
-  struct timeval start_time, end_time;
-  gettimeofday(&start_time, NULL);
+  auto start_time = std::chrono::high_resolution_clock::now();
 
   for (int i = 0; i < np; ++i)
     tp[i] = std::thread(produce<T, C, W>, std::ref(s));
@@ -198,17 +198,18 @@ void runOnce() {
   std::cout << "Cursor: " << cursor << '\n';
   std::cout << "Sum: " << snapSum << '\n';
 
-  gettimeofday(&end_time, NULL);
-
-  double start, end;
-  start = start_time.tv_sec + ((double)start_time.tv_usec / 1000000);
-  end = end_time.tv_sec + ((double)end_time.tv_usec / 1000000);
+  auto end_time = std::chrono::high_resolution_clock::now();
+  auto diff = end_time - start_time;
 
   std::cout.precision(15);
   std::cout << np << "P-" << nc << "C " << demangle(typeid(C).name()) << " "
             << demangle(typeid(W).name()) << '\n';
-  std::cout << (cursor * 1.0) / (end - start) << " ops/secs"
+  std::cout << (cursor * 1.0) / (std::chrono::duration_cast<std::chrono::seconds>(diff).count()) << " ops/secs"
             << "\n\n";
+
+  delete[] tc;
+  delete[] tp;
+  delete[] sequences;
 }
 
 int main(int argc, char** argv) {
