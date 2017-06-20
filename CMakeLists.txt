@@ -82,6 +82,9 @@ enable_testing()
 add_executable(example_bin examples/example.cc)
 target_link_libraries(example_bin)
 
+add_executable(example_pipeline_bin examples/example_pipeline.cc)
+target_link_libraries(example_pipeline_bin)
+
 add_executable(sequence_test_bin test/sequence_test.cc)
 target_link_libraries(sequence_test_bin ${Boost_LIBRARIES})
 add_test(sequence_test sequence_test_bin)

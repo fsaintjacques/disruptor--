@@ -1,4 +1,4 @@
-// Generic n producers - m consumers sequenced example.
+// 1 producer - 3 consumers sequenced pipeline example.
 
 #include <chrono>
 #include <climits>
@@ -44,22 +44,19 @@ size_t delta = 1;
 // Number of producer threads
 int np = 1;
 // Number of consumer threads
-int nc = 1;
+int nc = 3;
 
-// Not handled in a thread safe way
-bool running = true;
+std::atomic<bool> running;
 
-// Consume published data
 template <typename T, typename C, typename W>
-void consume(disruptor::Sequencer<T, C, W>& s, disruptor::Sequence& seq) {
-  std::vector<disruptor::Sequence*> depseqs;
-  auto barrier = s.NewBarrier(depseqs);
-
+void consume(disruptor::Sequencer<T, C, W>& s,
+             std::unique_ptr<disruptor::SequenceBarrier<W> > barrier,
+             disruptor::Sequence& seq) {
   int64_t next_seq = disruptor::kFirstSequenceValue;
 
   int exitCtr = 0;
 
-  while (running) {
+  while (running.load(std::memory_order_relaxed)) {
 #ifdef PRINT_DEBUG_CONS
     std::stringstream ss;
     ss << "Wait for next seq: " << next_seq << ' ' << std::this_thread::get_id()
@@ -78,7 +75,9 @@ void consume(disruptor::Sequencer<T, C, W>& s, disruptor::Sequence& seq) {
     std::cout << ss.str();
 #endif
 
-    if (available_seq == disruptor::kTimeoutSignal && running == false) break;
+    if (available_seq == disruptor::kTimeoutSignal &&
+        running.load(std::memory_order_relaxed) == false)
+      break;
 
     if (available_seq < next_seq) continue;
 
@@ -127,7 +126,6 @@ void produce(disruptor::Sequencer<T, C, W>& s) {
   int iterations = counter * RING_BUFFER_SIZE;
 
   for (int64_t i = 0; i < iterations; ++i) {
-    if (running == false) break;
 
     int64_t sequence = s.Claim(delta);
 
@@ -164,20 +162,47 @@ template <typename T, typename C, typename W>
 void runOnce() {
   std::cout << "Staring run " << std::endl;
 
-  running = true;
+  running.store(true);
 
   disruptor::Sequence* sequences = new disruptor::Sequence[nc];
 
   std::vector<disruptor::Sequence*> seqs;
   disruptor::Sequencer<T, C, W> s(RING_BUFFER_SIZE);
 
-  for (int i = 0; i < nc; ++i) seqs.push_back(&sequences[i]);
-
-  s.set_gating_sequences(seqs);
-
   std::thread* tc = new std::thread[nc];
-  for (int i = 0; i < nc; ++i)
-    tc[i] = std::thread(consume<T, C, W>, std::ref(s), std::ref(sequences[i]));
+  for (int i = 0; i < nc; ++i) {
+    switch (i) {
+      case 0: {
+        std::vector<disruptor::Sequence*> depseqs;
+        auto barrier = s.NewBarrier(depseqs);
+
+        tc[i] = std::thread(consume<T, C, W>, std::ref(s), std::move(barrier),
+                            std::ref(sequences[i]));
+      } break;
+
+      case 1: {
+        std::vector<disruptor::Sequence*> depseqs;
+        depseqs.push_back(&sequences[i - 1]);
+        auto barrier = s.NewBarrier(depseqs);
+
+        tc[i] = std::thread(consume<T, C, W>, std::ref(s), std::move(barrier),
+                            std::ref(sequences[i]));
+      } break;
+
+      // last in the pipeline
+      case 2: {
+        seqs.push_back(&sequences[i]);
+        s.set_gating_sequences(seqs);
+
+        std::vector<disruptor::Sequence*> depseqs;
+        depseqs.push_back(&sequences[i - 1]);
+        auto barrier = s.NewBarrier(depseqs);
+
+        tc[i] = std::thread(consume<T, C, W>, std::ref(s), std::move(barrier),
+                            std::ref(sequences[i]));
+      } break;
+    }
+  }
 
   std::thread* tp = new std::thread[np];
 
@@ -189,7 +214,7 @@ void runOnce() {
   // std::this_thread::sleep_for(std::chrono::seconds(3));
 
   for (int i = 0; i < np; ++i) tp[i].join();
-  running = false;
+  running.store(false);
   for (int i = 0; i < nc; ++i) tc[i].join();
 
   int64_t cursor = s.GetCursor();
@@ -222,15 +247,8 @@ int main(int argc, char** argv) {
   args::ArgumentParser parser(
       "This is an example program that demonstrates disruptor-- usage.", "");
   args::HelpFlag help(parser, "help", "Display this help menu", {'h', "help"});
-  args::ValueFlag<int> num_prod(parser, "num_prod", "Number of producers",
-                                {"np"}, np);
-  args::ValueFlag<int> num_cons(parser, "num_cons", "Number of consumers",
-                                {"nc"}, nc);
   args::ValueFlag<size_t> batch_size(parser, "batch_size", "Batch size", {"bs"},
                                      delta);
-  args::ValueFlag<int> multi(parser, "multi",
-                             "Multithreaded claim strategy (1 old, 2 new)",
-                             {"mt"}, false);
   args::ValueFlag<size_t> looper(parser, "looper",
                                  "Number of times loop over the ring buffer.",
                                  {'l', "loop"}, counter);
@@ -250,73 +268,25 @@ int main(int argc, char** argv) {
 
   delta = batch_size.Get();
   counter = looper.Get();
-  nc = num_cons.Get();
   RING_BUFFER_SIZE = ring_buffer_size.Get();
 
-  if (multi.Get() == 0) {
-    runOnce<long, disruptor::SingleThreadedStrategy,
-            disruptor::SleepingStrategy<> >();
+  runOnce<long, disruptor::SingleThreadedStrategy,
+          disruptor::SleepingStrategy<> >();
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+  std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    runOnce<long, disruptor::SingleThreadedStrategy,
-            disruptor::YieldingStrategy<> >();
+  runOnce<long, disruptor::SingleThreadedStrategy,
+          disruptor::YieldingStrategy<> >();
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+  std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    runOnce<long, disruptor::SingleThreadedStrategy,
-            disruptor::BusySpinStrategy>();
+  runOnce<long, disruptor::SingleThreadedStrategy,
+          disruptor::BusySpinStrategy>();
 
-    std::this_thread::sleep_for(std::chrono::milliseconds(500));
+  std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    runOnce<long, disruptor::SingleThreadedStrategy,
-            disruptor::BlockingStrategy>();
-
-  } else {
-    np = num_prod.Get();
-
-    switch (multi.Get()) {
-      case 1: {
-        runOnce<long, disruptor::MultiThreadedStrategy,
-                disruptor::SleepingStrategy<> >();
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
-
-        runOnce<long, disruptor::MultiThreadedStrategy,
-                disruptor::YieldingStrategy<> >();
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
-
-        runOnce<long, disruptor::MultiThreadedStrategy,
-                disruptor::BusySpinStrategy>();
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
-
-        runOnce<long, disruptor::MultiThreadedStrategy,
-                disruptor::BlockingStrategy>();
-      } break;
-
-      case 2: {
-        runOnce<long, disruptor::MultiThreadedStrategyEx,
-                disruptor::SleepingStrategy<> >();
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
-
-        runOnce<long, disruptor::MultiThreadedStrategyEx,
-                disruptor::YieldingStrategy<> >();
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
-
-        runOnce<long, disruptor::MultiThreadedStrategyEx,
-                disruptor::BusySpinStrategy>();
-
-        std::this_thread::sleep_for(std::chrono::milliseconds(500));
-
-        runOnce<long, disruptor::MultiThreadedStrategyEx,
-                disruptor::BlockingStrategy>();
-      } break;
-    }
-  }
+  runOnce<long, disruptor::SingleThreadedStrategy,
+          disruptor::BlockingStrategy>();
 
   return 0;
 }
