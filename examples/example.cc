@@ -1,3 +1,4 @@
+#include <chrono>
 #include <climits>
 #include <iostream>
 #include <memory>
@@ -5,7 +6,6 @@
 #include <thread>
 #include <typeinfo>
 #include <vector>
-#include <chrono>
 
 #include "args.hxx"
 
@@ -93,8 +93,7 @@ void consume(disruptor::Sequencer<T, C, W>& s, disruptor::Sequence& seq) {
          << std::this_thread::get_id() << '\n';
       std::cout << ss.str();
 
-      if (exitCtr > 50)
-        break;
+      if (exitCtr > 50) break;
 #endif
       // Otherwise goes into a busy loop with blocking strategy
       if (exitCtr > 10)
@@ -165,7 +164,7 @@ void runOnce() {
 
   running = true;
 
-  disruptor::Sequence * sequences = new disruptor::Sequence[nc];
+  disruptor::Sequence* sequences = new disruptor::Sequence[nc];
 
   std::vector<disruptor::Sequence*> seqs;
   disruptor::Sequencer<T, C, W> s(RING_BUFFER_SIZE);
@@ -204,7 +203,10 @@ void runOnce() {
   std::cout.precision(15);
   std::cout << np << "P-" << nc << "C " << demangle(typeid(C).name()) << " "
             << demangle(typeid(W).name()) << '\n';
-  std::cout << (cursor * 1.0) / (std::chrono::duration_cast<std::chrono::seconds>(diff).count()) << " ops/secs"
+  std::cout << (cursor * 1000.0) /
+                   (std::chrono::duration_cast<std::chrono::milliseconds>(diff)
+                        .count())
+            << " ops/secs"
             << "\n\n";
 
   delete[] tc;
@@ -222,8 +224,8 @@ int main(int argc, char** argv) {
                                 {"np"}, np);
   args::ValueFlag<int> num_cons(parser, "num_cons", "Number of consumers",
                                 {"nc"}, nc);
-  args::ValueFlag<size_t> batch_size(parser, "batch_size", "Batch size",
-                                     {"bs"}, delta);
+  args::ValueFlag<size_t> batch_size(parser, "batch_size", "Batch size", {"bs"},
+                                     delta);
   args::ValueFlag<int> multi(parser, "multi",
                              "Multithreaded claim strategy (1 old, 2 new)",
                              {"mt"}, false);
