@@ -31,7 +31,7 @@
 
 namespace disruptor {
 
-size_t kDefaultRingBufferSize = 1024;
+constexpr size_t kDefaultRingBufferSize = 1024;
 
 // Ring buffer implemented with a fixed array.
 //

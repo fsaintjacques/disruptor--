@@ -67,7 +67,7 @@ using kDefaultClaimStrategy = SingleThreadedStrategy;
 class SingleThreadedStrategy {
  public:
   SingleThreadedStrategy(size_t n)
-      : N(n),
+      : buffer_size_(n),
         last_claimed_sequence_(kInitialCursorValue),
         last_consumer_sequence_(kInitialCursorValue) {}
 
@@ -75,7 +75,7 @@ class SingleThreadedStrategy {
                           const std::vector<Sequence*>& dependents,
                           size_t delta = 1) {
     const int64_t next_sequence = (last_claimed_sequence_ += delta);
-    const int64_t wrap_point = next_sequence - N;
+    const int64_t wrap_point = next_sequence - buffer_size_;
     if (last_consumer_sequence_ < wrap_point) {
       while (GetMinimumSequence(dependents) < wrap_point) {
         // TODO: configurable yield strategy
@@ -87,7 +87,7 @@ class SingleThreadedStrategy {
 
   bool HasAvailableCapacity(const std::vector<Sequence*>& dependents,
                             int64_t cursor, int required_capacity = 1) {
-    const int64_t wrap_point = last_claimed_sequence_ + required_capacity - N;
+    const int64_t wrap_point = last_claimed_sequence_ + required_capacity - buffer_size_;
     if (wrap_point > last_consumer_sequence_) {
       const int64_t min_sequence = GetMinimumSequence(dependents);
       last_consumer_sequence_ = min_sequence;
@@ -109,7 +109,7 @@ class SingleThreadedStrategy {
  private:
   // We do not need to use atomic values since this function is called by a
   // single publisher.
-  size_t N;
+  size_t buffer_size_;
   int64_t last_claimed_sequence_;
   int64_t last_consumer_sequence_;
 
@@ -119,13 +119,13 @@ class SingleThreadedStrategy {
 // Optimised strategy can be used when there is a single publisher thread.
 class MultiThreadedStrategy {
  public:
-  MultiThreadedStrategy(size_t n) : N(n) {}
+  MultiThreadedStrategy(size_t n) : buffer_size_(n) {}
 
   int64_t IncrementAndGet(Sequence& cursor,
                           const std::vector<Sequence*>& dependents,
                           size_t delta = 1) {
     const int64_t next_sequence = last_claimed_sequence_.IncrementAndGet(delta);
-    const int64_t wrap_point = next_sequence - N;
+    const int64_t wrap_point = next_sequence - buffer_size_;
     if (last_consumer_sequence_.sequence() < wrap_point) {
       while (GetMinimumSequence(dependents) < wrap_point) {
         // TODO: configurable yield strategy
@@ -138,7 +138,7 @@ class MultiThreadedStrategy {
   bool HasAvailableCapacity(const std::vector<Sequence*>& dependents,
                             int64_t cursor, int required_capacity = 1) {
     const int64_t wrap_point =
-        last_claimed_sequence_.sequence() + required_capacity - N;
+        last_claimed_sequence_.sequence() + required_capacity - buffer_size_;
     if (wrap_point > last_consumer_sequence_.sequence()) {
       const int64_t min_sequence = GetMinimumSequence(dependents);
       last_consumer_sequence_.set_sequence(min_sequence);
@@ -165,7 +165,7 @@ class MultiThreadedStrategy {
   }
 
  private:
-  size_t N;
+  size_t buffer_size_;
   Sequence last_claimed_sequence_;
   Sequence last_consumer_sequence_;
 
@@ -176,7 +176,7 @@ class MultiThreadedStrategy {
 class MultiThreadedStrategyEx {
  public:
   MultiThreadedStrategyEx(size_t n)
-      : N(n), index_mask_(n - 1), index_shift_(log2(n)), available_buffer_(n) {
+      : buffer_size_(n), index_mask_(n - 1), index_shift_(log2(n)), available_buffer_(n) {
     for (size_t i = 0; i < n; ++i)
       available_buffer_[i].store(-1, std::memory_order_release);
   }
@@ -191,7 +191,7 @@ class MultiThreadedStrategyEx {
       current = cursor.sequence();
       next = current + delta;
 
-      int64_t wrap_point = next - N;
+      int64_t wrap_point = next - buffer_size_;
       int64_t cached_gating_sequence = last_consumer_sequence_.sequence();
 
       if (wrap_point > cached_gating_sequence ||
@@ -215,7 +215,7 @@ class MultiThreadedStrategyEx {
 
   bool HasAvailableCapacity(const std::vector<Sequence*>& dependents,
                             int64_t cursor_value, int required_capacity = 1) {
-    int64_t wrap_point = (cursor_value + required_capacity) - N;
+    int64_t wrap_point = (cursor_value + required_capacity) - buffer_size_;
     int64_t cached_gating_sequence = last_consumer_sequence_.sequence();
 
     if (wrap_point > cached_gating_sequence ||
@@ -273,7 +273,7 @@ class MultiThreadedStrategyEx {
     return (available_buffer_[index].load(std::memory_order_acquire) == flag);
   }
 
-  size_t N;
+  size_t buffer_size_;
   int index_mask_;
   int index_shift_;
   Sequence last_consumer_sequence_;
