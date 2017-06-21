@@ -27,7 +27,7 @@
 #define DISRUPTOR_RING_BUFFER_H_  // NOLINT
 
 #include "utils.h"
-#include <array>
+#include <vector>
 
 namespace disruptor {
 
@@ -49,16 +49,16 @@ class RingBuffer {
   // @param wait_strategy_option waiting strategy employed by
   // processors_to_track waiting in entries becoming available.
   RingBuffer(size_t n = kDefaultRingBufferSize)
-      : index_mask_(n - 1), events_(nullptr) {
-    if (((n < 0) || ((n & (~n + 1)) != n))) {
+      : index_mask_(n - 1) {
+    if (((n == 0) || ((n & (~n + 1)) != n))) {
       throw std::runtime_error(
           "RingBuffer's size must be a positive power of 2");
     }
 
-    events_ = new T[n];
+    events_.resize(n);
   }
 
-  ~RingBuffer() { delete[] events_; }
+  ~RingBuffer() {}
 
   // Get the event for a given sequence in the RingBuffer.
   //
@@ -74,7 +74,7 @@ class RingBuffer {
 
  private:
   int index_mask_;
-  T* events_;
+  std::vector<T> events_;
 
   DISALLOW_COPY_MOVE_AND_ASSIGN(RingBuffer);
 };
