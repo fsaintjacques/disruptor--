@@ -26,6 +26,7 @@
 #ifndef DISRUPTOR_CLAIM_STRATEGY_H_  // NOLINT
 #define DISRUPTOR_CLAIM_STRATEGY_H_  // NOLINT
 
+#include <math.h>
 #include <thread>
 
 #include "disruptor/ring_buffer.h"
@@ -87,7 +88,8 @@ class SingleThreadedStrategy {
 
   bool HasAvailableCapacity(const std::vector<Sequence*>& dependents,
                             int64_t cursor, int required_capacity = 1) {
-    const int64_t wrap_point = last_claimed_sequence_ + required_capacity - buffer_size_;
+    const int64_t wrap_point =
+        last_claimed_sequence_ + required_capacity - buffer_size_;
     if (wrap_point > last_consumer_sequence_) {
       const int64_t min_sequence = GetMinimumSequence(dependents);
       last_consumer_sequence_ = min_sequence;
@@ -176,9 +178,13 @@ class MultiThreadedStrategy {
 class MultiThreadedStrategyEx {
  public:
   MultiThreadedStrategyEx(size_t n)
-      : buffer_size_(n), index_mask_(n - 1), index_shift_(log2(n)), available_buffer_(n) {
+      : buffer_size_(n),
+        index_mask_(n - 1),
+        index_shift_(log2(n)),
+        available_buffer_(n) {
     for (size_t i = 0; i < n; ++i)
-      available_buffer_[i].store(-1, std::memory_order_release);
+      available_buffer_[i].store(static_cast<int>(-1),
+                                 std::memory_order_release);
   }
 
   int64_t IncrementAndGet(Sequence& cursor,
