@@ -13,11 +13,13 @@ matrix:
             - g++-5
             - valgrind
             - libboost-all-dev
+            - cmake
+            - cmake-data
           sources:
             - ubuntu-toolchain-r-test
 
-install:
-  - cd ${TRAVIS_BUILD_DIR} && tools/deps
+#install:
+#  - cd ${TRAVIS_BUILD_DIR} && tools/deps
 script:
   - cd ${TRAVIS_BUILD_DIR} && tools/test
 after_success:
