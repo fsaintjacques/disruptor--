@@ -11,9 +11,12 @@ matrix:
           sources:
             - ubuntu-toolchain-r-test
           packages:
+            - gcc-5
             - g++-5
+            - valgrind
+            - libboost-all-dev
       env: COMPILER=g++-5
-
+      
 #install:
 #  - cd ${TRAVIS_BUILD_DIR} && tools/deps
 script:
