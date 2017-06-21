@@ -4,6 +4,7 @@ language: cpp
 
 matrix:
   include:
+  
     - compiler: gcc
       addons:
         apt:
@@ -15,6 +16,36 @@ matrix:
             - valgrind
             - libboost-all-dev
       env: COMPILER=g++-5
+      
+    - compiler: clang
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-trusty-3.6
+          packages:
+            - clang-3.6
+            - llvm-3.6
+            - llvm-3.6-tools
+            - llvm-toolchain-3.6
+            - valgrind
+            - libboost-all-dev
+      env: COMPILER=clang++-3.6
+      
+    - compiler: clang
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-trusty-3.7
+          packages:
+            - clang-3.7
+            - llvm-3.7
+            - llvm-3.7-tools
+            - llvm-toolchain-3.7
+            - valgrind
+            - libboost-all-dev
+      env: COMPILER=clang++-3.7
       
 #install:
 #  - cd ${TRAVIS_BUILD_DIR} && tools/deps
