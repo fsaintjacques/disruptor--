@@ -1,5 +1,6 @@
 sudo: required
 language: cpp
+dist: trusty
 
 matrix:
   include:
@@ -21,24 +22,12 @@ matrix:
         apt:
           sources:
             - ubuntu-toolchain-r-test
-            - llvm-toolchain-precise-3.6
+            - llvm-toolchain-trusty-3.9
           packages:
-            - clang-3.6
+            - clang-3.9
             - valgrind
             - libboost-all-dev
-      env: COMPILER=clang++-3.6
-      
-    - compiler: clang
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-            - llvm-toolchain-precise-3.7
-          packages:
-            - clang-3.7
-            - valgrind
-            - libboost-all-dev
-      env: COMPILER=clang++-3.7
+      env: COMPILER=clang++-3.9
       
 #install:
 #  - cd ${TRAVIS_BUILD_DIR} && tools/deps
