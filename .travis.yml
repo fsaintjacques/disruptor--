@@ -1,49 +1,40 @@
-sudo: required
 dist: trusty
+sudo: required
 language: cpp
 
 matrix:
   include:
-  
-    - compiler: gcc
+    
+    # works on Precise and Trusty
+    - os: linux
       addons:
         apt:
           sources:
             - ubuntu-toolchain-r-test
           packages:
-            - gcc-5
             - g++-5
-            - valgrind
             - libboost-all-dev
-      env: COMPILER=g++-5
-      
-    - compiler: clang
+      env:
+         - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
+
+    # works on Precise and Trusty
+    - os: linux
       addons:
         apt:
           sources:
             - ubuntu-toolchain-r-test
-            - llvm-toolchain-trusty-3.6
+            - llvm-toolchain-precise-3.8
           packages:
-            - clang-3.6
-            - valgrind
+            - clang-3.8
             - libboost-all-dev
-      env: COMPILER=clang++-3.6
-      
-    - compiler: clang
-      addons:
-        apt:
-          sources:
-            - ubuntu-toolchain-r-test
-            - llvm-toolchain-trusty-3.7
-          packages:
-            - clang-3.7
-            - valgrind
-            - libboost-all-dev
-      env: COMPILER=clang++-3.7
-      
-#install:
-#  - cd ${TRAVIS_BUILD_DIR} && tools/deps
+      env:
+        - MATRIX_EVAL="CC=clang-3.8 && CXX=clang++-3.8"
+        
+before_install:
+    - eval "${MATRIX_EVAL}"
+    
 script:
   - cd ${TRAVIS_BUILD_DIR} && tools/test
+  
 after_success:
   - cd ${TRAVIS_BUILD_DIR} && tools/coverage
