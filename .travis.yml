@@ -1,22 +1,44 @@
-language: c++
-os: linux
-sudo: false
+# Use new trusty images, should yield newer compilers and packages
+sudo: required
+dist: trusty
+language: cpp
 
 matrix:
   include:
-  
-    - env: GCC_VERSION=5
-      addons: &gcc49
+    - compiler: gcc
+      addons:
         apt:
-          packages:
-            - gcc-5
-            - g++-5
-            - valgrind
-            - libboost-all-dev
-            - cmake
-            - cmake-data
           sources:
             - ubuntu-toolchain-r-test
+          packages:
+            - g++-4.9
+      env: COMPILER=g++-4.9
+    - compiler: gcc
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-5
+      env: COMPILER=g++-5
+    - compiler: clang
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-precise-3.6
+          packages:
+            - clang-3.6
+      env: COMPILER=clang++-3.6
+    - compiler: clang
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+            - llvm-toolchain-precise-3.7
+          packages:
+            - clang-3.7
+      env: COMPILER=clang++-3.7
 
 #install:
 #  - cd ${TRAVIS_BUILD_DIR} && tools/deps
