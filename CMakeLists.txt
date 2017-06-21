@@ -47,6 +47,15 @@ SET(CMAKE_CXX_FLAGS_DEBUG  "-O0 -g")
 
 endif()
 
+if ("${CMAKE_CXX_COMPILER_ID}" STREQUAL "Clang")
+
+SET(CMAKE_CXX_FLAGS "-Wall -pthread")
+SET(CMAKE_CXX_FLAGS_RELWITHDEBINFO "-O3 -g")
+SET(CMAKE_CXX_FLAGS_RELEASE "-O3")
+SET(CMAKE_CXX_FLAGS_DEBUG  "-O0 -g")
+
+endif()
+
 add_library(disruptor INTERFACE)
 include_directories("${PROJECT_SOURCE_DIR}")
 
