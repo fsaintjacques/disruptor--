@@ -45,6 +45,9 @@ matrix:
     - os: linux
       env: UNIT_TESTS=true LLVM_VERSION=default BOOST_VERSION=default CMAKE_OPTIONS="-DBOOST_HANA_ENABLE_CONCEPT_CHECKS=OFF"
       compiler: clang
+      addons:
+        apt:
+          packages: boost_unit_test_framework1.63-dev
 
     
 install:
@@ -160,14 +163,3 @@ script:
         (cd build && ctest --output-on-failure -j2)
       fi
     fi
-  - |
-    if [[ "${UNIT_TESTS}" == "true" && "${BOOST_BUILD}" == "true" ]]; then
-      touch Jamroot
-      echo "using clang : : ${CXX} ;" > project-config.jam
-      if [[ "${LDFLAGS}" == "" ]]; then
-        (cd test && b2 toolset=clang cxxflags="-std=c++1y ${CXXFLAGS}" include="${BOOST_DIR}")
-      else
-        (cd test && b2 toolset=clang cxxflags="-std=c++1y ${CXXFLAGS}" include="${BOOST_DIR}" linkflags="${LDFLAGS}")
-      fi
-    fi
-
