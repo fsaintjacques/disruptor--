@@ -15,6 +15,17 @@ matrix:
             - libboost-all-dev
       env:
         - MATRIX_EVAL="CC=clang-3.6 && CXX=clang++-3.6"
+        
+    # works on Precise and Trusty
+    - os: linux
+      addons:
+        apt:
+          sources:
+            - ubuntu-toolchain-r-test
+          packages:
+            - g++-5
+      env:
+         - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
 
 before_install:
     - eval "${MATRIX_EVAL}"
