@@ -4,19 +4,19 @@ language: cpp
 
 matrix:
   include:
-    
+
     # works on Precise and Trusty
     - os: linux
       addons:
         apt:
           sources:
             - ubuntu-toolchain-r-test
+            - llvm-toolchain-precise-3.8
           packages:
-            - g++-5
+            - clang-3.8
             - libboost-all-dev
       env: UNIT_TESTS=true BOOST_VERSION=default
-         - MATRIX_EVAL="CC=gcc-5 && CXX=g++-5"
-
+        - MATRIX_EVAL="CC=clang-3.8 && CXX=clang++-3.8"
         
 before_install:
     - eval "${MATRIX_EVAL}"
