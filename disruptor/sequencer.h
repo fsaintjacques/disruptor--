@@ -73,8 +73,9 @@ class Sequencer {
   // of available capacity.
   //
   // @return true if the buffer has the capacity to allocated another event.
-  bool HasAvailableCapacity() {
-    return claim_strategy_.HasAvailableCapacity(gating_sequences_);
+  bool HasAvailableCapacity(int required_capacity = 1) {
+    return claim_strategy_.HasAvailableCapacity(gating_sequences_,
+                                                required_capacity);
   }
 
   int64_t GetHighestPublishedSequence(int64_t lowerBound,
