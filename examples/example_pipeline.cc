@@ -46,8 +46,6 @@ int np = 1;
 // Number of consumer threads
 int nc = 3;
 
-std::atomic<bool> running;
-
 // The expected value of the cursor in the end
 int64_t expectedValue;
 
@@ -59,7 +57,7 @@ void consume(disruptor::Sequencer<T, C, W>& s,
 
   int exitCtr = 0;
 
-  while (running.load(std::memory_order_relaxed)) {
+  while (true) {
 #ifdef PRINT_DEBUG_CONS
     std::stringstream ss;
     ss << "Wait for next seq: " << next_seq << ' ' << std::this_thread::get_id()
