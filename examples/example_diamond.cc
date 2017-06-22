@@ -219,11 +219,11 @@ void runOnce() {
   for (int i = 0; i < nc; ++i) tc[i].join();
 
   int64_t cursor = s.GetCursor();
-  unsigned long snapSum = sum;
   std::cout << "\nBatch size: " << delta
             << " Ring buffer size: " << RING_BUFFER_SIZE << '\n';
   std::cout << "Cursor: " << cursor << '\n';
-  std::cout << "Sum: " << snapSum << '\n';
+  std::cout << "Sum: " << sum.load() << " Expected sum: "
+            << (expectedValue * (expectedValue + 1) * nc) / 2 << '\n';
 
   auto end_time = std::chrono::high_resolution_clock::now();
   auto diff = end_time - start_time;

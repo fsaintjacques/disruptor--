@@ -113,8 +113,7 @@ void consume(disruptor::Sequencer<T, C, W>& s, disruptor::Sequence& seq) {
 
     seq.set_sequence(available_seq);
 
-    if (available_seq == expectedValue)
-      break;
+    if (available_seq == expectedValue) break;
 
     next_seq = available_seq + 1;
 
@@ -130,7 +129,6 @@ void produce(disruptor::Sequencer<T, C, W>& s) {
   int iterations = counter * RING_BUFFER_SIZE;
 
   for (int64_t i = 0; i < iterations; ++i) {
-
     int64_t sequence = s.Claim(delta);
 
     if (sequence < delta) {
@@ -194,11 +192,11 @@ void runOnce() {
   for (int i = 0; i < nc; ++i) tc[i].join();
 
   int64_t cursor = s.GetCursor();
-  unsigned long snapSum = sum;
   std::cout << "\nBatch size: " << delta
             << " Ring buffer size: " << RING_BUFFER_SIZE << '\n';
   std::cout << "Cursor: " << cursor << '\n';
-  std::cout << "Sum: " << snapSum << '\n';
+  std::cout << "Sum: " << sum.load() << " Expected sum: "
+            << (expectedValue * (expectedValue + 1) * nc) / 2 << '\n';
 
   auto end_time = std::chrono::high_resolution_clock::now();
   auto diff = end_time - start_time;
@@ -256,8 +254,7 @@ int main(int argc, char** argv) {
 
   expectedValue = (RING_BUFFER_SIZE * delta * counter * num_prod.Get()) - 1;
 
-  if (delta > RING_BUFFER_SIZE)
-  {
+  if (delta > RING_BUFFER_SIZE) {
     std::cout << "Batch size cannot be greater than ring buffer size.\n";
     return 1;
   }
