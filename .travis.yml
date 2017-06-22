@@ -47,7 +47,7 @@ matrix:
       compiler: clang
       addons:
         apt:
-          packages: boost_unit_test_framework1.63-dev
+          packages: boost_unit_test_framework-dev
 
     
 install:
