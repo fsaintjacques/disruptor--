@@ -270,6 +270,12 @@ int main(int argc, char** argv) {
   counter = looper.Get();
   RING_BUFFER_SIZE = ring_buffer_size.Get();
 
+  if (delta > RING_BUFFER_SIZE)
+  {
+    std::cout << "Batch size cannot be greater than ring buffer size.\n";
+    return 1;
+  }
+
   runOnce<long, disruptor::SingleThreadedStrategy,
           disruptor::SleepingStrategy<> >();
 

@@ -47,7 +47,7 @@ int np = 1;
 int nc = 1;
 
 // Not handled in a thread safe way
-bool running = true;
+std::atomic<bool> running;
 
 // Consume published data
 template <typename T, typename C, typename W>
@@ -59,7 +59,7 @@ void consume(disruptor::Sequencer<T, C, W>& s, disruptor::Sequence& seq) {
 
   int exitCtr = 0;
 
-  while (running) {
+  while (running.load(std::memory_order_relaxed)) {
 #ifdef PRINT_DEBUG_CONS
     std::stringstream ss;
     ss << "Wait for next seq: " << next_seq << ' ' << std::this_thread::get_id()
@@ -78,7 +78,9 @@ void consume(disruptor::Sequencer<T, C, W>& s, disruptor::Sequence& seq) {
     std::cout << ss.str();
 #endif
 
-    if (available_seq == disruptor::kTimeoutSignal && running == false) break;
+    if (available_seq == disruptor::kTimeoutSignal &&
+        running.load(std::memory_order_relaxed) == false)
+      break;
 
     if (available_seq < next_seq) continue;
 
@@ -127,7 +129,6 @@ void produce(disruptor::Sequencer<T, C, W>& s) {
   int iterations = counter * RING_BUFFER_SIZE;
 
   for (int64_t i = 0; i < iterations; ++i) {
-    if (running == false) break;
 
     int64_t sequence = s.Claim(delta);
 
@@ -164,7 +165,7 @@ template <typename T, typename C, typename W>
 void runOnce() {
   std::cout << "Staring run " << std::endl;
 
-  running = true;
+  running.store(true);
 
   disruptor::Sequence* sequences = new disruptor::Sequence[nc];
 
@@ -189,7 +190,7 @@ void runOnce() {
   // std::this_thread::sleep_for(std::chrono::seconds(3));
 
   for (int i = 0; i < np; ++i) tp[i].join();
-  running = false;
+  running.store(false);
   for (int i = 0; i < nc; ++i) tc[i].join();
 
   int64_t cursor = s.GetCursor();
@@ -252,6 +253,12 @@ int main(int argc, char** argv) {
   counter = looper.Get();
   nc = num_cons.Get();
   RING_BUFFER_SIZE = ring_buffer_size.Get();
+
+  if (delta > RING_BUFFER_SIZE)
+  {
+    std::cout << "Batch size cannot be greater than ring buffer size.\n";
+    return 1;
+  }
 
   if (multi.Get() == 0) {
     runOnce<long, disruptor::SingleThreadedStrategy,
