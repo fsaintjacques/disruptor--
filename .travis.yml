@@ -6,8 +6,6 @@ language: c++
 sudo: false
 
 env:
-  
-  # Workaround for https://github.com/travis-ci/travis-ci/issues/4681
   matrix:
     - TRAVIS_EMPTY_JOB_WORKAROUND=true
 
