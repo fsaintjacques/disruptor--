@@ -34,8 +34,8 @@ std::string demangle(const char* name) { return name; }
 
 size_t RING_BUFFER_SIZE = 2048;
 
-// Not handled in a thread safe way
-unsigned long sum = 0;
+// Sum of all the events
+std::atomic<int64_t> sum;
 // Number of times to loop over buffer in a producer thread
 size_t counter = 1000;
 // Batch size
@@ -47,6 +47,9 @@ int np = 1;
 int nc = 3;
 
 std::atomic<bool> running;
+
+// The expected value of the cursor in the end
+int64_t expectedValue;
 
 template <typename T, typename C, typename W>
 void consume(disruptor::Sequencer<T, C, W>& s,
@@ -75,10 +78,6 @@ void consume(disruptor::Sequencer<T, C, W>& s,
     std::cout << ss.str();
 #endif
 
-    if (available_seq == disruptor::kTimeoutSignal &&
-        running.load(std::memory_order_relaxed) == false)
-      break;
-
     if (available_seq < next_seq) continue;
 
     // Only required for claim strategy MultiThreadedStrategyEx as it changes
@@ -102,15 +101,20 @@ void consume(disruptor::Sequencer<T, C, W>& s,
       continue;
     }
 
+    int64_t val = 0;
     for (int64_t i = next_seq; i <= available_seq; ++i) {
       const long& ev = s[i];
 #ifdef PRINT_DEBUG_CONS
       std::cout << i << " Event: " << ev << '\n';
 #endif
-      sum += ev;
+      val += ev;
     }
+    sum.fetch_add(val, std::memory_order_relaxed);
 
     seq.set_sequence(available_seq);
+
+    if (available_seq == expectedValue)
+      break;
 
     next_seq = available_seq + 1;
 
@@ -162,7 +166,7 @@ template <typename T, typename C, typename W>
 void runOnce() {
   std::cout << "Staring run " << std::endl;
 
-  running.store(true);
+  sum.store(0);
 
   disruptor::Sequence* sequences = new disruptor::Sequence[nc];
 
@@ -214,7 +218,6 @@ void runOnce() {
   // std::this_thread::sleep_for(std::chrono::seconds(3));
 
   for (int i = 0; i < np; ++i) tp[i].join();
-  running.store(false);
   for (int i = 0; i < nc; ++i) tc[i].join();
 
   int64_t cursor = s.GetCursor();
@@ -269,6 +272,8 @@ int main(int argc, char** argv) {
   delta = batch_size.Get();
   counter = looper.Get();
   RING_BUFFER_SIZE = ring_buffer_size.Get();
+
+  expectedValue = (RING_BUFFER_SIZE * delta * counter) - 1;
 
   if (delta > RING_BUFFER_SIZE)
   {

@@ -73,7 +73,7 @@ class Sequence {
   // @param the value to which the {@link Sequence} will be set.
   // @return success or failure
   bool compare_and_swap(int64_t old_value, int64_t new_value) {
-    return (sequence_.compare_exchange_strong(old_value, new_value,
+    return (sequence_.compare_exchange_weak(old_value, new_value,
                                             std::memory_order_acq_rel,
                                             std::memory_order_relaxed));
   }
