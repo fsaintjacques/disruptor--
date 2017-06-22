@@ -151,7 +151,7 @@ script:
   # Build and run the unit tests and examples.
   ############################################################################
 
-- |
+  - |
     if [[ "${UNIT_TESTS}" == "true" && "${BOOST_BUILD}" != "true" ]]; then
       (cd build && make tests -j2 -k) &&
       if [[ "${ENABLE_MEMCHECK}" == "true" ]]; then
