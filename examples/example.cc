@@ -58,6 +58,7 @@ void consume(disruptor::Sequencer<T, C, W>& s, disruptor::Sequence& seq) {
   int64_t next_seq = disruptor::kFirstSequenceValue;
 
   int exitCtr = 0;
+  int64_t localSum = 0;
 
   while (true) {
 #ifdef PRINT_DEBUG_CONS
@@ -101,15 +102,13 @@ void consume(disruptor::Sequencer<T, C, W>& s, disruptor::Sequence& seq) {
       continue;
     }
 
-    int64_t val = 0;
     for (int64_t i = next_seq; i <= available_seq; ++i) {
       const long& ev = s[i];
 #ifdef PRINT_DEBUG_CONS
       std::cout << i << " Event: " << ev << '\n';
 #endif
-      val += ev;
+      localSum += ev;
     }
-    sum.fetch_add(val, std::memory_order_relaxed);
 
     seq.set_sequence(available_seq);
 
@@ -119,6 +118,8 @@ void consume(disruptor::Sequencer<T, C, W>& s, disruptor::Sequence& seq) {
 
     exitCtr = 0;
   }
+
+  sum.fetch_add(localSum, std::memory_order_relaxed);
 
   barrier->set_alerted(true);
 }
@@ -201,10 +202,10 @@ void runOnce() {
   auto end_time = std::chrono::high_resolution_clock::now();
   auto diff = end_time - start_time;
 
-  std::cout.precision(15);
+  //std::cout.precision(15);
   std::cout << np << "P-" << nc << "C " << demangle(typeid(C).name()) << " "
             << demangle(typeid(W).name()) << '\n';
-  std::cout << (cursor * 1000.0) /
+  std::cout << (cursor * 1000) /
                    (std::chrono::duration_cast<std::chrono::milliseconds>(diff)
                         .count())
             << " ops/secs"
