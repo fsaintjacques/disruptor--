@@ -144,6 +144,8 @@ class BusySpinStrategy {
 
     while ((available_sequence = min_sequence()) < sequence) {
       if (alerted.load()) return kAlertedSignal;
+
+      SpinPause();
     }
 
     return available_sequence;
@@ -164,6 +166,8 @@ class BusySpinStrategy {
       if (alerted.load()) return kAlertedSignal;
 
       if (stop <= std::chrono::system_clock::now()) return kTimeoutSignal;
+
+      SpinPause();
     }
 
     return available_sequence;
