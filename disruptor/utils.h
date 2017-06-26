@@ -26,6 +26,10 @@
 #ifndef DISRUPTOR_UTILS_H_  // NOLINT
 #define DISRUPTOR_UTILS_H_  // NOLINT
 
+#ifdef _MSC_VER
+#include <Windows.h>
+#endif
+
 inline void SpinPause() {
 #if defined(__GNUC__) || defined(__clang__)
 
