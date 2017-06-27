@@ -228,6 +228,7 @@ class YieldingStrategy {
  private:
   inline int64_t ApplyWaitMethod(int64_t counter) {
     if (counter) {
+      SpinPause();
       return --counter;
     }
 
@@ -289,6 +290,7 @@ class SleepingStrategy {
  private:
   inline int64_t ApplyWaitMethod(int64_t counter) {
     if (counter > (S / 2)) {
+      SpinPause();
       --counter;
     } else if (counter > 0) {
       --counter;

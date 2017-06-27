@@ -91,6 +91,9 @@ enable_testing()
 add_executable(example_bin examples/example.cc)
 target_link_libraries(example_bin)
 
+add_executable(example_aligned_bin examples/example_aligned.cc)
+target_link_libraries(example_aligned_bin)
+
 add_executable(example_pipeline_bin examples/example_pipeline.cc)
 target_link_libraries(example_pipeline_bin)
 
