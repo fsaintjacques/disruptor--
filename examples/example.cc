@@ -93,8 +93,6 @@ void consume(disruptor::Sequencer<T, C, W>& s, disruptor::Sequence& seq) {
       ss << "Highest published seq: " << available_seq << ' '
          << std::this_thread::get_id() << '\n';
       std::cout << ss.str();
-
-      if (exitCtr > 50) break;
 #endif
       // Otherwise goes into a busy loop with blocking strategy
       if (exitCtr > 10)
@@ -120,8 +118,6 @@ void consume(disruptor::Sequencer<T, C, W>& s, disruptor::Sequence& seq) {
   }
 
   sum.fetch_add(localSum, std::memory_order_relaxed);
-
-  barrier->set_alerted(true);
 }
 
 // Publish data
