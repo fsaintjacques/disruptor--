@@ -38,6 +38,8 @@ namespace disruptor {
 // {@link Seqencer} by publishers.
 class ClaimStrategyInterface {
  public:
+    virtual ~ClaimStrategyInterface() {}
+
     // Is there available capacity in the buffer for the requested sequence.
     //
     // @param dependent_sequences to be checked for range.
@@ -82,6 +84,8 @@ class ClaimStrategyInterface {
 // dependent {@link EventProcessor}s for processing a data structure.
 class SequenceBarrierInterface {
  public:
+    virtual ~SequenceBarrierInterface() {}
+
     // Wait for the given sequence to be available for consumption.
     //
     // @param sequence to wait for.
@@ -134,6 +138,8 @@ class SequenceBarrierInterface {
 template<typename T>
 class EventFactoryInterface {
  public:
+     virtual ~EventFactoryInterface() {}
+
      virtual T* NewInstance(const int& size) const = 0;
 };
 
@@ -145,6 +151,8 @@ class EventFactoryInterface {
 template<typename T>
 class EventHandlerInterface {
  public:
+    virtual ~EventHandlerInterface() {}
+
     // Called when a publisher has published an event to the {@link RingBuffer}
     //
     // @param event published to the {@link RingBuffer}
@@ -173,12 +181,17 @@ class EventHandlerInterface {
 template<typename T>
 class EventTranslatorInterface {
  public:
+     virtual ~EventTranslatorInterface() {}
+
      // Translate a data representation into fields set in given event
      //
      // @param event into which the data should be translated.
      // @param sequence that is assigned to events.
      // @return the resulting event after it has been translated.
      virtual T* TranslateTo(const int64_t& sequence, T* event) = 0;
+
+ private:
+     DISALLOW_COPY_AND_ASSIGN(EventTranslatorInterface);
 };
 
 // EventProcessors wait for events to become available for consumption from
@@ -190,6 +203,8 @@ class EventTranslatorInterface {
 template<typename T>
 class EventProcessorInterface {
  public:
+     virtual ~EventProcessorInterface() {}
+
      // Get a pointer to the {@link Sequence} being used by this
      // {@link EventProcessor}.
      //
@@ -211,6 +226,8 @@ class EventProcessorInterface {
 template<typename T>
 class ExceptionHandlerInterface {
  public:
+    virtual ~ExceptionHandlerInterface() {}
+
     // Strategy for handling uncaught exceptions when processing an event.
     // If the strategy wishes to suspend further processing by the
     // {@link BatchEventProcessor} then it should throw a std::runtime_error.
@@ -227,6 +244,8 @@ class ExceptionHandlerInterface {
 // {@link Sequence}.
 class WaitStrategyInterface {
  public:
+    virtual ~WaitStrategyInterface() {}
+
     //  Wait for the given sequence to be available for consumption.
     //
     //  @param dependents further back the chain that must advance first.

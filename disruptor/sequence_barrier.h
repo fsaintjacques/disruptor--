@@ -45,6 +45,8 @@ class ProcessingSequenceBarrier : SequenceBarrierInterface {
         alerted_(false) {
     }
 
+    virtual ~ProcessingSequenceBarrier() {}
+
     virtual int64_t WaitFor(const int64_t& sequence) {
         return wait_strategy_->WaitFor(dependent_sequences_, *cursor_, *this,
                                        sequence);
@@ -82,6 +84,7 @@ class ProcessingSequenceBarrier : SequenceBarrierInterface {
     Sequence* cursor_;
     std::vector<Sequence*> dependent_sequences_;
     std::atomic<bool> alerted_;
+    DISALLOW_COPY_AND_ASSIGN(ProcessingSequenceBarrier);
 };
 
 };  // namespace disruptor

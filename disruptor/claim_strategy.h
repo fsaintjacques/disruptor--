@@ -47,6 +47,8 @@ class SingleThreadedStrategy :  public ClaimStrategyInterface {
         sequence_(kInitialCursorValue),
         min_gating_sequence_(kInitialCursorValue) {}
 
+    virtual ~SingleThreadedStrategy() {}
+
     virtual int64_t IncrementAndGet(
             const std::vector<Sequence*>& dependent_sequences) {
         int64_t next_sequence = sequence_.IncrementAndGet(1L);
