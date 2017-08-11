@@ -41,6 +41,8 @@ class BatchDescriptor {
         size_(size),
         end_(kInitialCursorValue) {}
 
+    virtual ~BatchDescriptor() {}
+
     // Get the size of the batch
     int size() const { return size_; }
 

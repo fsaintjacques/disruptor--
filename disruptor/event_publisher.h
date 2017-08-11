@@ -35,6 +35,8 @@ class EventPublisher {
  public:
     EventPublisher(RingBuffer<T>* ring_buffer) : ring_buffer_(ring_buffer) {}
 
+    virtual ~EventPublisher() {}
+
     void PublishEvent(EventTranslatorInterface<T>* translator) {
         int64_t sequence = ring_buffer_->Next();
         translator->TranslateTo(sequence, ring_buffer_->Get(sequence));

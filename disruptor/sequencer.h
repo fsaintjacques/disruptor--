@@ -55,7 +55,7 @@ class Sequencer {
                                                 buffer_size_)),
             wait_strategy_(CreateWaitStrategy(wait_strategy_option)) { }
 
-    ~Sequencer() {
+    virtual ~Sequencer() {
         delete claim_strategy_;
         delete wait_strategy_;
     }

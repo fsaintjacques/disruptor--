@@ -65,6 +65,8 @@ class BlockingStrategy :  public WaitStrategyInterface {
  public:
     BlockingStrategy() {}
 
+    virtual ~BlockingStrategy() {}
+
     virtual int64_t WaitFor(const std::vector<Sequence*>& dependents,
                             const Sequence& cursor,
                             const SequenceBarrierInterface& barrier,
@@ -134,6 +136,8 @@ class BlockingStrategy :  public WaitStrategyInterface {
 class SleepingStrategy :  public WaitStrategyInterface {
  public:
     SleepingStrategy() {}
+
+    virtual ~SleepingStrategy() {}
 
     virtual int64_t WaitFor(const std::vector<Sequence*>& dependents,
                             const Sequence& cursor,
@@ -220,6 +224,8 @@ class YieldingStrategy :  public WaitStrategyInterface {
  public:
     YieldingStrategy() {}
 
+    virtual ~YieldingStrategy() {}
+
     virtual int64_t WaitFor(const std::vector<Sequence*>& dependents,
                             const Sequence& cursor,
                             const SequenceBarrierInterface& barrier,
@@ -303,6 +309,8 @@ class YieldingStrategy :  public WaitStrategyInterface {
 class BusySpinStrategy :  public WaitStrategyInterface {
  public:
     BusySpinStrategy() {}
+
+    virtual ~BusySpinStrategy() {}
 
     virtual int64_t WaitFor(const std::vector<Sequence*>& dependents,
                             const Sequence& cursor,
