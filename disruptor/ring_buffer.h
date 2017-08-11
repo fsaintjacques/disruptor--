@@ -67,7 +67,7 @@ class RingBuffer : public Sequencer {
             events_(event_factory->NewInstance(buffer_size)) {
     }
 
-    ~RingBuffer() {
+    virtual ~RingBuffer() {
         delete[] events_;
     }
 

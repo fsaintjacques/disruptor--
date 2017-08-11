@@ -51,6 +51,8 @@ class Sequence {
     Sequence(int64_t initial_value = kInitialCursorValue) :
             value_(initial_value) {}
 
+    virtual ~Sequence() {}
+
     // Get the current value of the {@link Sequence}.
     //
     // @return the current value.
@@ -85,6 +87,8 @@ class PaddedSequence : public Sequence {
     PaddedSequence(int64_t initial_value = kInitialCursorValue) :
             Sequence(initial_value) {}
 
+    virtual ~PaddedSequence() {}
+
  private:
     // padding
     int64_t padding_[ATOMIC_SEQUENCE_PADDING_LENGTH];
@@ -100,6 +104,8 @@ class MutableLong {
      MutableLong(int64_t initial_value = kInitialCursorValue) :
          sequence_(initial_value) {}
 
+     virtual ~MutableLong() {}
+
      int64_t sequence() const { return sequence_; }
 
      void set_sequence(const int64_t& sequence) { sequence_ = sequence; };
@@ -108,6 +114,7 @@ class MutableLong {
 
  private:
      volatile int64_t sequence_;
+     DISALLOW_COPY_AND_ASSIGN(MutableLong);
 };
 
 // Cache line padded non-atomic sequence counter.
@@ -117,8 +124,12 @@ class PaddedLong : public MutableLong {
  public:
      PaddedLong(int64_t initial_value = kInitialCursorValue) :
          MutableLong(initial_value) {}
+
+     virtual ~PaddedLong() {}
+
  private:
      int64_t padding_[SEQUENCE_PADDING_LENGTH];
+     DISALLOW_COPY_AND_ASSIGN(PaddedLong);
 };
 
 int64_t GetMinimumSequence(

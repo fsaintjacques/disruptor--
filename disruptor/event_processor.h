@@ -38,6 +38,8 @@ class NoOpEventProcessor : public EventProcessorInterface<T> {
     NoOpEventProcessor(RingBuffer<T>* ring_buffer) :
         ring_buffer_(ring_buffer) { }
 
+    virtual ~NoOpEventProcessor() {}
+
     virtual Sequence* GetSequence() {
         return ring_buffer_->GetSequencePtr();
     }
@@ -63,6 +65,7 @@ class BatchEventProcessor : public EventProcessorInterface<T> {
             event_handler_(event_handler),
             exception_handler_(exception_handler) {}
 
+    virtual ~BatchEventProcessor() {}
 
     virtual Sequence* GetSequence() { return &sequence_; }
 

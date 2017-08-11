@@ -17,3 +17,6 @@ test-driver
 # generated binaries
 perf/perf-*
 test/*_test
+
+# emacs backup files
+*~
