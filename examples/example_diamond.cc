@@ -100,7 +100,7 @@ void consume(disruptor::Sequencer<T, C, W>& s,
     }
 
     for (int64_t i = next_seq; i <= available_seq; ++i) {
-      const long& ev = s[i];
+      int64_t ev = s[i];
 #ifdef PRINT_DEBUG_CONS
       std::cout << i << " Event: " << ev << '\n';
 #endif
@@ -123,7 +123,7 @@ void consume(disruptor::Sequencer<T, C, W>& s,
 // Publish data
 template <typename T, typename C, typename W>
 void produce(disruptor::Sequencer<T, C, W>& s) {
-  int iterations = counter * RING_BUFFER_SIZE;
+  int64_t iterations = counter * RING_BUFFER_SIZE;
 
   for (int64_t i = 0; i < iterations; ++i) {
 

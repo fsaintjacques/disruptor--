@@ -104,7 +104,7 @@ void consume(disruptor::Sequencer<T, C, W, Alignment>& s, disruptor::Sequence& s
     }
 
     for (int64_t i = next_seq; i <= available_seq; ++i) {
-      const long& ev = s[i];
+      int64_t ev = s[i];
 #ifdef PRINT_DEBUG_CONS
       std::cout << i << " Event: " << ev << '\n';
 #endif
@@ -126,13 +126,13 @@ void consume(disruptor::Sequencer<T, C, W, Alignment>& s, disruptor::Sequence& s
 // Publish data
 template <typename T, typename C, typename W>
 void produce(disruptor::Sequencer<T, C, W, Alignment>& s) {
-  int iterations = counter * RING_BUFFER_SIZE;
+  int64_t iterations = counter * RING_BUFFER_SIZE;
 
   for (int64_t i = 0; i < iterations; ++i) {
     int64_t sequence = s.Claim(delta);
 
     if (sequence < delta) {
-      for (int k = 0; k <= sequence; ++k) {
+      for (int64_t k = 0; k <= sequence; ++k) {
         s[k] = k;
 #ifdef PRINT_DEBUG_PROD
         std::stringstream ss;
@@ -209,7 +209,10 @@ void runOnce() {
                    (std::chrono::duration_cast<std::chrono::milliseconds>(diff)
                         .count())
             << " ops/secs"
-            << "\n\n";
+            << "\n";
+
+  std::cout << "Milliseconds: " << std::chrono::duration_cast<std::chrono::milliseconds>(diff)
+                          .count() << "\n\n";
 
   delete[] tc;
   delete[] tp;
@@ -261,22 +264,22 @@ int main(int argc, char** argv) {
   }
 
   if (multi.Get() == 0) {
-    runOnce<long, disruptor::SingleThreadedStrategy,
+    runOnce<int64_t, disruptor::SingleThreadedStrategy,
             disruptor::SleepingStrategy<> >();
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    runOnce<long, disruptor::SingleThreadedStrategy,
+    runOnce<int64_t, disruptor::SingleThreadedStrategy,
             disruptor::YieldingStrategy<> >();
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    runOnce<long, disruptor::SingleThreadedStrategy,
+    runOnce<int64_t, disruptor::SingleThreadedStrategy,
             disruptor::BusySpinStrategy>();
 
     std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-    runOnce<long, disruptor::SingleThreadedStrategy,
+    runOnce<int64_t, disruptor::SingleThreadedStrategy,
             disruptor::BlockingStrategy>();
 
   } else {
@@ -284,42 +287,42 @@ int main(int argc, char** argv) {
 
     switch (multi.Get()) {
       case 1: {
-        runOnce<long, disruptor::MultiThreadedStrategy,
+        runOnce<int64_t, disruptor::MultiThreadedStrategy,
                 disruptor::SleepingStrategy<> >();
 
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-        runOnce<long, disruptor::MultiThreadedStrategy,
+        runOnce<int64_t, disruptor::MultiThreadedStrategy,
                 disruptor::YieldingStrategy<> >();
 
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-        runOnce<long, disruptor::MultiThreadedStrategy,
+        runOnce<int64_t, disruptor::MultiThreadedStrategy,
                 disruptor::BusySpinStrategy>();
 
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-        runOnce<long, disruptor::MultiThreadedStrategy,
+        runOnce<int64_t, disruptor::MultiThreadedStrategy,
                 disruptor::BlockingStrategy>();
       } break;
 
       case 2: {
-        runOnce<long, disruptor::MultiThreadedStrategyEx,
+        runOnce<int64_t, disruptor::MultiThreadedStrategyEx,
                 disruptor::SleepingStrategy<> >();
 
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-        runOnce<long, disruptor::MultiThreadedStrategyEx,
+        runOnce<int64_t, disruptor::MultiThreadedStrategyEx,
                 disruptor::YieldingStrategy<> >();
 
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-        runOnce<long, disruptor::MultiThreadedStrategyEx,
+        runOnce<int64_t, disruptor::MultiThreadedStrategyEx,
                 disruptor::BusySpinStrategy>();
 
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-        runOnce<long, disruptor::MultiThreadedStrategyEx,
+        runOnce<int64_t, disruptor::MultiThreadedStrategyEx,
                 disruptor::BlockingStrategy>();
       } break;
     }
