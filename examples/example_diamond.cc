@@ -277,22 +277,22 @@ int main(int argc, char** argv) {
     return 1;
   }
 
-  runOnce<long, disruptor::SingleThreadedStrategy,
+  runOnce<int64_t, disruptor::SingleThreadedStrategy,
           disruptor::SleepingStrategy<> >();
 
   std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-  runOnce<long, disruptor::SingleThreadedStrategy,
+  runOnce<int64_t, disruptor::SingleThreadedStrategy,
           disruptor::YieldingStrategy<> >();
 
   std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-  runOnce<long, disruptor::SingleThreadedStrategy,
+  runOnce<int64_t, disruptor::SingleThreadedStrategy,
           disruptor::BusySpinStrategy>();
 
   std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-  runOnce<long, disruptor::SingleThreadedStrategy,
+  runOnce<int64_t, disruptor::SingleThreadedStrategy,
           disruptor::BlockingStrategy>();
 
   return 0;

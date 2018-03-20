@@ -280,42 +280,42 @@ int main(int argc, char** argv) {
 
     switch (multi.Get()) {
       case 1: {
-        runOnce<long, disruptor::MultiThreadedStrategy,
+        runOnce<int64_t, disruptor::MultiThreadedStrategy,
                 disruptor::SleepingStrategy<> >();
 
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-        runOnce<long, disruptor::MultiThreadedStrategy,
+        runOnce<int64_t, disruptor::MultiThreadedStrategy,
                 disruptor::YieldingStrategy<> >();
 
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-        runOnce<long, disruptor::MultiThreadedStrategy,
+        runOnce<int64_t, disruptor::MultiThreadedStrategy,
                 disruptor::BusySpinStrategy>();
 
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-        runOnce<long, disruptor::MultiThreadedStrategy,
+        runOnce<int64_t, disruptor::MultiThreadedStrategy,
                 disruptor::BlockingStrategy>();
       } break;
 
       case 2: {
-        runOnce<long, disruptor::MultiThreadedStrategyEx,
+        runOnce<int64_t, disruptor::MultiThreadedStrategyEx,
                 disruptor::SleepingStrategy<> >();
 
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-        runOnce<long, disruptor::MultiThreadedStrategyEx,
+        runOnce<int64_t, disruptor::MultiThreadedStrategyEx,
                 disruptor::YieldingStrategy<> >();
 
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-        runOnce<long, disruptor::MultiThreadedStrategyEx,
+        runOnce<int64_t, disruptor::MultiThreadedStrategyEx,
                 disruptor::BusySpinStrategy>();
 
         std::this_thread::sleep_for(std::chrono::milliseconds(500));
 
-        runOnce<long, disruptor::MultiThreadedStrategyEx,
+        runOnce<int64_t, disruptor::MultiThreadedStrategyEx,
                 disruptor::BlockingStrategy>();
       } break;
     }
