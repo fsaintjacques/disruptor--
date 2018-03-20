@@ -35,17 +35,14 @@ namespace disruptor {
 namespace test {
 
 struct RingBufferFixture {
-  RingBufferFixture() : ring_buffer(initArray()) {}
+  RingBufferFixture() : ring_buffer(RING_BUFFER_SIZE) {
+    for (int i = 0; i < RING_BUFFER_SIZE; ++i)
+      ring_buffer[i] = i + 1;
+  }
 
   size_t f(const size_t i) { return i + 1; }
 
-  std::array<int, RING_BUFFER_SIZE> initArray() {
-    std::array<int, RING_BUFFER_SIZE> tmp;
-    for (size_t i = 0; i < RING_BUFFER_SIZE; i++) tmp[i] = f(i);
-    return tmp;
-  }
-
-  RingBuffer<int, RING_BUFFER_SIZE> ring_buffer;
+  RingBuffer<int> ring_buffer;
 };
 
 BOOST_AUTO_TEST_SUITE(RingBufferBasic)

@@ -26,20 +26,22 @@
 #ifndef DISRUPTOR_SEQUENCER_H_  // NOLINT
 #define DISRUPTOR_SEQUENCER_H_  // NOLINT
 
+#include <memory>
+
 #include "disruptor/claim_strategy.h"
-#include "disruptor/wait_strategy.h"
 #include "disruptor/sequence_barrier.h"
+#include "disruptor/wait_strategy.h"
 
 namespace disruptor {
 
 // Coordinator for claiming sequences for access to a data structures while
 // tracking dependent {@link Sequence}s
-template <typename T, size_t N = kDefaultRingBufferSize,
-          typename C = kDefaultClaimStrategy, typename W = kDefaultWaitStrategy>
+template <typename T, typename C = kDefaultClaimStrategy,
+          typename W = kDefaultWaitStrategy, int A = 0>
 class Sequencer {
  public:
   // Construct a Sequencer with the selected strategies.
-  Sequencer(std::array<T, N> events) : ring_buffer_(events) {}
+  Sequencer(size_t n) : ring_buffer_(n), claim_strategy_(n) {}
 
   // Set the sequences that will gate publishers to prevent the buffer
   // wrapping.
@@ -54,8 +56,11 @@ class Sequencer {
   //
   // @param sequences_to_track this barrier will track.
   // @return the barrier gated as required.
-  SequenceBarrier<W> NewBarrier(const std::vector<Sequence*>& dependents) {
-    return SequenceBarrier<W>(cursor_, dependents);
+  std::unique_ptr<SequenceBarrier<W> > NewBarrier(
+      const std::vector<Sequence*>& dependents) {
+    std::unique_ptr<SequenceBarrier<W> > sb(
+        new SequenceBarrier<W>(wait_strategy_, cursor_, dependents));
+    return sb;
   }
 
   // Get the value of the cursor indicating the published sequence.
@@ -68,8 +73,15 @@ class Sequencer {
   // of available capacity.
   //
   // @return true if the buffer has the capacity to allocated another event.
-  bool HasAvailableCapacity() {
-    return claim_strategy_.HasAvailableCapacity(gating_sequences_);
+  bool HasAvailableCapacity(int required_capacity = 1) {
+    return claim_strategy_.HasAvailableCapacity(gating_sequences_,
+                                                required_capacity);
+  }
+
+  int64_t GetHighestPublishedSequence(int64_t lowerBound,
+                                      int64_t availableSequence) {
+    return claim_strategy_.GetHighestPublishedSequence(lowerBound,
+                                                       availableSequence);
   }
 
   // Claim the next batch of sequence numbers for publishing.
@@ -77,7 +89,7 @@ class Sequencer {
   // @param delta  the requested number of sequences.
   // @return the maximal claimed sequence
   int64_t Claim(size_t delta = 1) {
-    return claim_strategy_.IncrementAndGet(gating_sequences_, delta);
+    return claim_strategy_.IncrementAndGet(cursor_, gating_sequences_, delta);
   }
 
   // Publish an event and make it visible to {@link EventProcessor}s.
@@ -85,15 +97,19 @@ class Sequencer {
   // @param sequence to be published.
   void Publish(const int64_t& sequence, size_t delta = 1) {
     claim_strategy_.SynchronizePublishing(sequence, cursor_, delta);
-    const int64_t new_cursor = cursor_.IncrementAndGet(delta);
+    // const int64_t new_cursor = cursor_.IncrementAndGet(delta);
     wait_strategy_.SignalAllWhenBlocking();
   }
 
   T& operator[](const int64_t& sequence) { return ring_buffer_[sequence]; }
 
+  const T& operator[](const int64_t& sequence) const {
+    return ring_buffer_[sequence];
+  }
+
  private:
   // Members
-  RingBuffer<T, N> ring_buffer_;
+  RingBuffer<T, A> ring_buffer_;
 
   Sequence cursor_;
 

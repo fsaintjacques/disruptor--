@@ -26,8 +26,8 @@
 #ifndef DISRUPTOR_RING_BUFFER_H_  // NOLINT
 #define DISRUPTOR_RING_BUFFER_H_  // NOLINT
 
-#include <array>
 #include "utils.h"
+#include <vector>
 
 namespace disruptor {
 
@@ -36,8 +36,8 @@ constexpr size_t kDefaultRingBufferSize = 1024;
 // Ring buffer implemented with a fixed array.
 //
 // @param <T> event type
-// @param <N> size of the ring
-template <typename T, size_t N = kDefaultRingBufferSize>
+// @param <A> alignment
+template <typename T, int A = 0>
 class RingBuffer {
  public:
   // Construct a RingBuffer with the full option set.
@@ -48,23 +48,79 @@ class RingBuffer {
   // entries in the ring.
   // @param wait_strategy_option waiting strategy employed by
   // processors_to_track waiting in entries becoming available.
-  RingBuffer(const std::array<T, N>& events) : events_(events) {}
+  RingBuffer(size_t n = kDefaultRingBufferSize)
+      : index_mask_(n - 1), events_(n) {
+    if (((n == 0) || ((n & (~n + 1)) != n))) {
+      throw std::runtime_error(
+          "RingBuffer<T, int>'s size must be a positive power of 2");
+    }
+  }
 
-  static_assert(((N > 0) && ((N & (~N + 1)) == N)),
-                "RingBuffer's size must be a positive power of 2");
+  ~RingBuffer() {}
 
   // Get the event for a given sequence in the RingBuffer.
   //
   // @param sequence for the event
   // @return event reference at the specified sequence position.
-  T& operator[](const int64_t& sequence) { return events_[sequence & (N - 1)]; }
+  T& operator[](const int64_t& sequence) {
+    return events_[sequence & index_mask_].elem_;
+  }
 
   const T& operator[](const int64_t& sequence) const {
-    return events_[sequence & (N - 1)];
+    return events_[sequence & index_mask_].elem_;
   }
 
  private:
-  std::array<T, N> events_;
+  struct AlignedElement {
+    alignas(A) T elem_;
+  };
+
+  const int index_mask_;
+  alignas(A) std::vector<AlignedElement> events_;
+
+  DISALLOW_COPY_MOVE_AND_ASSIGN(RingBuffer);
+};
+
+// Ring buffer implemented with a fixed array.
+//
+// @param <T> event type
+template <typename T>
+class RingBuffer<T, 0> {
+ public:
+  // Construct a RingBuffer with the full option set.
+  //
+  // @param event_factory to instance new entries for filling the RingBuffer.
+  // @param buffer_size of the RingBuffer, must be a power of 2.
+  // @param claim_strategy_option threading strategy for publishers claiming
+  // entries in the ring.
+  // @param wait_strategy_option waiting strategy employed by
+  // processors_to_track waiting in entries becoming available.
+  RingBuffer(size_t n = kDefaultRingBufferSize) : index_mask_(n - 1) {
+    if (((n == 0) || ((n & (~n + 1)) != n))) {
+      throw std::runtime_error(
+          "RingBuffer<T, 0>'s size must be a positive power of 2");
+    }
+
+    events_.resize(n);
+  }
+
+  ~RingBuffer() {}
+
+  // Get the event for a given sequence in the RingBuffer.
+  //
+  // @param sequence for the event
+  // @return event reference at the specified sequence position.
+  T& operator[](const int64_t& sequence) {
+    return events_[sequence & index_mask_];
+  }
+
+  const T& operator[](const int64_t& sequence) const {
+    return events_[sequence & index_mask_];
+  }
+
+ private:
+  int index_mask_;
+  std::vector<T> events_;
 
   DISALLOW_COPY_MOVE_AND_ASSIGN(RingBuffer);
 };

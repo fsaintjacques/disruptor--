@@ -26,6 +26,45 @@
 #ifndef DISRUPTOR_UTILS_H_  // NOLINT
 #define DISRUPTOR_UTILS_H_  // NOLINT
 
+#ifdef _MSC_VER
+#include <Windows.h>
+#endif
+
+inline void SpinPause() {
+#if defined(__GNUC__) || defined(__clang__)
+
+#if defined(__i386__) || defined(__x86_64__)
+
+#if defined(__SSE__)
+  __asm__ __volatile__("pause");
+#else
+  __asm__ __volatile__("rep; nop");
+#endif
+
+#elif defined(__sparc)
+  // high latency nop; "move contents of condition code to gr0"
+  // see https://blogs.oracle.com/dave/entry/polite_busy_waiting_with_wrpause
+  __asm__ __volatile__("rd %ccr,%g0");
+  __asm__ __volatile__("rd %ccr,%g0");
+// For Sparc T4 and newer we should use WRPAUSE but currently no suitable
+// way to get -mcpu switch from commandline
+#endif
+
+#elif __SUNPRO_CC >= 0x5100
+  __asm__ __volatile__("rd %ccr,%g0");
+  __asm__ __volatile__("rd %ccr,%g0");
+
+#elif defined(_MSC_VER)
+
+  YieldProcessor();
+
+#else
+
+#warning "unsupported platform for pause(); consider implementing it"
+  ; /* do nothing */
+#endif
+}
+
 // From Google C++ Standard, modified to use C++11 deleted functions.
 // A macro to disallow the copy constructor and operator= functions.
 #define DISALLOW_COPY_MOVE_AND_ASSIGN(TypeName) \

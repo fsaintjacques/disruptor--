@@ -1,29 +1,24 @@
 disruptor--
 ===========
-[![Build Status](https://travis-ci.org/fsaintjacques/disruptor--.svg?branch=develop)](https://travis-ci.org/fsaintjacques/disruptor--) [![Coverage Status](https://coveralls.io/repos/fsaintjacques/disruptor--/badge.svg?branch=develop)](https://coveralls.io/r/fsaintjacques/disruptor--?branch=develop)
+[![Build Status](https://travis-ci.org/karopawil/disruptor--.svg?branch=develop)](https://travis-ci.org/karopawil/disruptor--) [![Coverage Status](https://coveralls.io/repos/karopawil/disruptor--/badge.svg?branch=develop)](https://coveralls.io/r/karopawil/disruptor--?branch=develop)
 
 C++ implementation of LMAX's disruptor pattern.
 
-Supported compilers:
-  - clang-3.5
-  - clang-3.6
-  - gcc-4.8
-  - gcc-4.9
-  - gcc-5
+Ought to compile and run with gcc 5 and 6, clang 3.6 and 3.8, Visual Studio 2015.
 
-Build instructions
-------------------
+Examples can be run like (./example_* -h to see available options):
 
-This library is a header-only library and doesn't require compile step,
-move/copy the `disruptor/` folder in one of the include folder.
+./example_bin --np 1 --nc 1 --mt 0 --bs 1 -l 1000 --rb 65536
 
-If you want to develop and/or submit patches to `disruptor--` you need:
-  - CMake >= 3.0.1
-  - libboost-test
+./example_bin --np 1 --nc 1 --mt 0 --bs 5 -l 1000 --rb 65536
 
-Once dependencies are met
+./example_bin --nc 3 --np 1 --bs 1 --mt 0 --rb 8192 -l 5000
 
-```
-# mkdir -p build && cd build
-# cmake .. && make all test
-```
+./example_bin --nc 1 --np 3 --bs 1 --mt 2 --rb 8192 -l 1000
+
+./example_pipeline_bin --bs 1 --rb 8192 -l 10000
+
+./example_diamond_bin --bs 1 --rb 8192 -l 10000
+
+etc.
+

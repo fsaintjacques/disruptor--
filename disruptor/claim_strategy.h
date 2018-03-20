@@ -26,10 +26,11 @@
 #ifndef DISRUPTOR_CLAIM_STRATEGY_H_  // NOLINT
 #define DISRUPTOR_CLAIM_STRATEGY_H_  // NOLINT
 
+#include <math.h>
 #include <thread>
 
-#include "disruptor/sequence.h"
 #include "disruptor/ring_buffer.h"
+#include "disruptor/sequence.h"
 
 namespace disruptor {
 
@@ -60,22 +61,22 @@ class ClaimStrategy {
 };
 */
 
-template <size_t N>
 class SingleThreadedStrategy;
-using kDefaultClaimStrategy = SingleThreadedStrategy<kDefaultRingBufferSize>;
+using kDefaultClaimStrategy = SingleThreadedStrategy;
 
 // Optimised strategy can be used when there is a single publisher thread.
-template <size_t N = kDefaultRingBufferSize>
 class SingleThreadedStrategy {
  public:
-  SingleThreadedStrategy()
-      : last_claimed_sequence_(kInitialCursorValue),
+  SingleThreadedStrategy(size_t n)
+      : buffer_size_(n),
+        last_claimed_sequence_(kInitialCursorValue),
         last_consumer_sequence_(kInitialCursorValue) {}
 
-  int64_t IncrementAndGet(const std::vector<Sequence*>& dependents,
+  int64_t IncrementAndGet(Sequence& cursor,
+                          const std::vector<Sequence*>& dependents,
                           size_t delta = 1) {
     const int64_t next_sequence = (last_claimed_sequence_ += delta);
-    const int64_t wrap_point = next_sequence - N;
+    const int64_t wrap_point = next_sequence - buffer_size_;
     if (last_consumer_sequence_ < wrap_point) {
       while (GetMinimumSequence(dependents) < wrap_point) {
         // TODO: configurable yield strategy
@@ -85,8 +86,10 @@ class SingleThreadedStrategy {
     return next_sequence;
   }
 
-  bool HasAvailableCapacity(const std::vector<Sequence*>& dependents) {
-    const int64_t wrap_point = last_claimed_sequence_ + 1L - N;
+  bool HasAvailableCapacity(const std::vector<Sequence*>& dependents,
+                            int64_t cursor, int required_capacity = 1) {
+    const int64_t wrap_point =
+        last_claimed_sequence_ + required_capacity - buffer_size_;
     if (wrap_point > last_consumer_sequence_) {
       const int64_t min_sequence = GetMinimumSequence(dependents);
       last_consumer_sequence_ = min_sequence;
@@ -95,12 +98,20 @@ class SingleThreadedStrategy {
     return true;
   }
 
-  void SynchronizePublishing(const int64_t& sequence, const Sequence& cursor,
-                             const size_t& delta) {}
+  void SynchronizePublishing(const int64_t& sequence, Sequence& cursor,
+                             const size_t& delta) {
+    cursor.set_sequence(sequence);
+  }
+
+  int64_t GetHighestPublishedSequence(int64_t lowerBound,
+                                      int64_t availableSequence) {
+    return availableSequence;
+  }
 
  private:
   // We do not need to use atomic values since this function is called by a
   // single publisher.
+  size_t buffer_size_;
   int64_t last_claimed_sequence_;
   int64_t last_consumer_sequence_;
 
@@ -108,15 +119,15 @@ class SingleThreadedStrategy {
 };
 
 // Optimised strategy can be used when there is a single publisher thread.
-template <size_t N = kDefaultRingBufferSize>
 class MultiThreadedStrategy {
  public:
-  MultiThreadedStrategy() {}
+  MultiThreadedStrategy(size_t n) : buffer_size_(n) {}
 
-  int64_t IncrementAndGet(const std::vector<Sequence*>& dependents,
+  int64_t IncrementAndGet(Sequence& cursor,
+                          const std::vector<Sequence*>& dependents,
                           size_t delta = 1) {
     const int64_t next_sequence = last_claimed_sequence_.IncrementAndGet(delta);
-    const int64_t wrap_point = next_sequence - N;
+    const int64_t wrap_point = next_sequence - buffer_size_;
     if (last_consumer_sequence_.sequence() < wrap_point) {
       while (GetMinimumSequence(dependents) < wrap_point) {
         // TODO: configurable yield strategy
@@ -126,8 +137,10 @@ class MultiThreadedStrategy {
     return next_sequence;
   }
 
-  bool HasAvailableCapacity(const std::vector<Sequence*>& dependents) {
-    const int64_t wrap_point = last_claimed_sequence_.sequence() + 1L - N;
+  bool HasAvailableCapacity(const std::vector<Sequence*>& dependents,
+                            int64_t cursor, int required_capacity = 1) {
+    const int64_t wrap_point =
+        last_claimed_sequence_.sequence() + required_capacity - buffer_size_;
     if (wrap_point > last_consumer_sequence_.sequence()) {
       const int64_t min_sequence = GetMinimumSequence(dependents);
       last_consumer_sequence_.set_sequence(min_sequence);
@@ -136,7 +149,7 @@ class MultiThreadedStrategy {
     return true;
   }
 
-  void SynchronizePublishing(const int64_t& sequence, const Sequence& cursor,
+  void SynchronizePublishing(const int64_t& sequence, Sequence& cursor,
                              const size_t& delta) {
     int64_t my_first_sequence = sequence - delta;
 
@@ -144,13 +157,135 @@ class MultiThreadedStrategy {
       // TODO: configurable yield strategy
       std::this_thread::yield();
     }
+
+    cursor.set_sequence(sequence);
+  }
+
+  int64_t GetHighestPublishedSequence(int64_t lowerBound,
+                                      int64_t availableSequence) {
+    return availableSequence;
   }
 
  private:
+  size_t buffer_size_;
   Sequence last_claimed_sequence_;
   Sequence last_consumer_sequence_;
 
   DISALLOW_COPY_MOVE_AND_ASSIGN(MultiThreadedStrategy);
+};
+
+// Modelled after MultiProducerSequencer in LMAX disruptor
+class MultiThreadedStrategyEx {
+ public:
+  MultiThreadedStrategyEx(size_t n)
+      : buffer_size_(n),
+        index_mask_(n - 1),
+        index_shift_(log2(n)),
+        available_buffer_(n) {
+    for (size_t i = 0; i < n; ++i)
+      available_buffer_[i].store(static_cast<int>(-1),
+                                 std::memory_order_release);
+  }
+
+  int64_t IncrementAndGet(Sequence& cursor,
+                          const std::vector<Sequence*>& dependents,
+                          size_t delta = 1) {
+    int64_t current;
+    int64_t next;
+
+    do {
+      current = cursor.sequence();
+      next = current + delta;
+
+      int64_t wrap_point = next - buffer_size_;
+      int64_t cached_gating_sequence = last_consumer_sequence_.sequence();
+
+      if (wrap_point > cached_gating_sequence ||
+          cached_gating_sequence > current) {
+        int64_t gating_sequence = GetMinimumSequence(dependents, current);
+
+        if (wrap_point > gating_sequence) {
+          // TODO: configurable yield strategy
+          std::this_thread::yield();
+          continue;
+        }
+
+        last_consumer_sequence_.set_sequence(gating_sequence);
+      } else if (cursor.compare_and_swap(current, next)) {
+        break;
+      }
+    } while (true);
+
+    return next;
+  }
+
+  bool HasAvailableCapacity(const std::vector<Sequence*>& dependents,
+                            int64_t cursor_value, int required_capacity = 1) {
+    int64_t wrap_point = (cursor_value + required_capacity) - buffer_size_;
+    int64_t cached_gating_sequence = last_consumer_sequence_.sequence();
+
+    if (wrap_point > cached_gating_sequence ||
+        cached_gating_sequence > cursor_value) {
+      int64_t min_sequence = GetMinimumSequence(dependents, cursor_value);
+      last_consumer_sequence_.set_sequence(min_sequence);
+
+      if (wrap_point > min_sequence) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  void SynchronizePublishing(const int64_t& sequence, Sequence& cursor,
+                             const size_t& delta) {
+    int64_t my_first_sequence = sequence - delta + 1;
+
+    for (int64_t l = my_first_sequence; l <= sequence; l++) {
+      setAvailable(l);
+    }
+  }
+
+  int64_t GetHighestPublishedSequence(int64_t lowerBound,
+                                      int64_t availableSequence) {
+    for (int64_t sequence = lowerBound; sequence <= availableSequence;
+         sequence++) {
+      if (!isAvailable(sequence)) {
+        return sequence - 1;
+      }
+    }
+
+    return availableSequence;
+  }
+
+ private:
+  int calculateAvailabilityFlag(int64_t sequence) {
+    return (int)(sequence >> index_shift_);
+  }
+
+  void setAvailable(int64_t sequence) {
+    setAvailableBufferValue((sequence & index_mask_),
+                            calculateAvailabilityFlag(sequence));
+  }
+
+  void setAvailableBufferValue(size_t index, int flag) {
+    available_buffer_[index].store(flag, std::memory_order_release);
+  }
+
+  bool isAvailable(int64_t sequence) {
+    size_t index = (sequence & index_mask_);
+    int flag = calculateAvailabilityFlag(sequence);
+
+    return (available_buffer_[index].load(std::memory_order_acquire) == flag);
+  }
+
+  size_t buffer_size_;
+  int index_mask_;
+  int index_shift_;
+  Sequence last_consumer_sequence_;
+  std::vector<std::atomic<int> > available_buffer_;
+
+  DISALLOW_COPY_MOVE_AND_ASSIGN(MultiThreadedStrategyEx);
 };
 
 };  // namespace disruptor

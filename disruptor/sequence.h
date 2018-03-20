@@ -68,6 +68,16 @@ class Sequence {
     sequence_.store(value, std::memory_order::memory_order_release);
   }
 
+  // Try to compare and set the current value of the {@link Sequence}.
+  //
+  // @param the value to which the {@link Sequence} will be set.
+  // @return success or failure
+  bool compare_and_swap(int64_t old_value, int64_t new_value) {
+    return (sequence_.compare_exchange_weak(old_value, new_value,
+                                            std::memory_order_acq_rel,
+                                            std::memory_order_relaxed));
+  }
+
   // Increment and return the value of the {@link Sequence}.
   //
   // @param increment the {@link Sequence}.
@@ -89,9 +99,8 @@ class Sequence {
   DISALLOW_COPY_MOVE_AND_ASSIGN(Sequence);
 };
 
-int64_t GetMinimumSequence(const std::vector<Sequence*>& sequences) {
-  int64_t minimum = LONG_MAX;
-
+int64_t GetMinimumSequence(const std::vector<Sequence*>& sequences,
+                           int64_t minimum = INT64_MAX) {
   for (Sequence* sequence_ : sequences) {
     const int64_t sequence = sequence_->sequence();
     minimum = minimum < sequence ? minimum : sequence;
