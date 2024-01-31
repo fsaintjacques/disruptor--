@@ -37,9 +37,9 @@ namespace disruptor {
 template <typename W = kDefaultWaitStrategy>
 class SequenceBarrier {
  public:
-  SequenceBarrier(const Sequence& cursor,
+  SequenceBarrier(W& wait_strategy, const Sequence& cursor,
                   const std::vector<Sequence*>& dependents)
-      : cursor_(cursor), dependents_(dependents), alerted_(false) {}
+      : wait_strategy_(wait_strategy) cursor_(cursor), dependents_(dependents), alerted_(false) {}
 
   int64_t WaitFor(const int64_t& sequence) {
     return wait_strategy_.WaitFor(sequence, cursor_, dependents_, alerted_);
@@ -63,7 +63,7 @@ class SequenceBarrier {
   }
 
  private:
-  W wait_strategy_;
+  W& wait_strategy_;
   const Sequence& cursor_;
   std::vector<Sequence*> dependents_;
   std::atomic<bool> alerted_;
